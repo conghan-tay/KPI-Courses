@@ -1,0 +1,401 @@
+@import "tailwindcss";
+/* Base UI data-state variants (data-open, data-active, …) used by components/ui/*. */
+@import "shadcn/tailwind.css";
+
+/* ──────────────────────────────────────────────────────────────────────────
+   RISO POSTER — DESIGN.md §2, §3, §4.0
+   Two inks and paper. Pink is a surface, never an ink.
+   ────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-ink: #000000;
+  --color-ink-muted: #5c5c5c;
+  --color-ink-faint: #a3a3a3;
+  --color-pink: #f2a0e7;
+  --color-pink-deep: #d466c4;
+  --color-pink-wash: #fbe0f6;
+  --color-paper: #ffffff;
+  --color-paper-tint: #fdf4fb;
+  --color-surround: #f2a0e7;
+  --color-alert: #cc2318;
+
+  /* Containers are square; actions are full pills. There is no 8px radius here. */
+  --radius-none: 0px;
+  --radius-pill: 999px;
+
+  /* Hard offset, zero blur. There are no blurred shadows in this system. */
+  --shadow-lift: 4px 4px 0 0 #000000;
+  --shadow-lift-lg: 8px 8px 0 0 #000000;
+}
+
+@theme inline {
+  --font-display: var(--font-archivo);
+  --font-serif: var(--font-newsreader);
+  --font-mono: var(--font-dm-mono);
+}
+
+/* shadcn/Base UI semantic tokens, remapped onto the two inks so any primitive
+   internals we have not rewritten still land inside the system. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-archivo);
+  --font-heading: var(--font-archivo);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #ffffff;
+  --secondary-foreground: #000000;
+  --muted: #fdf4fb;
+  --muted-foreground: #5c5c5c;
+  --accent: #f2a0e7;
+  --accent-foreground: #000000;
+  --destructive: #cc2318;
+  --border: #000000;
+  --input: #000000;
+  --ring: #000000;
+  --radius: 0px;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-archivo), system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--color-surround);
+    color: var(--color-ink);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* §4.10 — a black ring with a paper gap, legible on white and on pink alike.
+     Never `outline: none`. */
+  :focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--color-pink);
+    color: var(--color-ink);
+  }
+}
+
+/* ── §3 Type scale ─────────────────────────────────────────────────────────
+   Each utility carries family, weight, size, leading, tracking and case
+   together, because in this system those travel as one decision. */
+
+@utility type-display-xl {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 64px;
+  line-height: 60px;
+  font-stretch: 110%;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+@utility type-display-l {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 44px;
+  line-height: 44px;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+@utility type-display-m {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 34px;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+@utility type-title {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 28px;
+}
+
+/* The reading size. Lesson bodies and anything the Specialist "said". */
+@utility type-body-l {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 32px;
+}
+
+@utility type-body {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 26px;
+}
+
+@utility type-body-s {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+@utility type-label {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@utility type-meta {
+  font-family: var(--font-dm-mono), ui-monospace, monospace;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+/* §3 — measure caps. Wide reading columns are how a brutalist layout becomes
+   unreadable, so these are utilities rather than per-screen decisions. */
+@utility measure-read {
+  max-width: 68ch;
+}
+
+@utility measure-ui {
+  max-width: 72ch;
+}
+
+/* ── §10 Patterns — the third value, without a third colour ───────────────── */
+
+@utility pat-halftone {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.3) 1px, transparent 1.3px);
+  background-size: 6px 6px;
+}
+
+@utility pat-hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-ink) 0 2px,
+    transparent 2px 8px
+  );
+}
+
+@utility pat-hatch-alert {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-alert) 0 2px,
+    transparent 2px 8px
+  );
+}
+
+@utility pat-meander {
+  background-repeat: repeat-x;
+  background-size: 24px 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M2 22V6h16v12H8v-8h6' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E");
+}
+
+/* The reference image's most recognisable gesture: a pink block behind display
+   type. Clones across line breaks so it survives wrapping. */
+@utility hl {
+  background: var(--color-pink);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0 0.18em;
+}
+
+/* §4.4 — every portrait is duotoned to black + pink. An unprocessed photograph
+   destroys a two-ink system instantly. */
+@utility riso-portrait-img {
+  filter: grayscale(1) contrast(1.45) brightness(1.05);
+  mix-blend-mode: multiply;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── §9 Motion — stepped, never eased ─────────────────────────────────────── */
+
+@keyframes riso-ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes riso-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* §6 — dialogs enter on transform only. Opacity is untouched: no fades. */
+@keyframes riso-dialog-enter {
+  from {
+    transform: translate(8px, 8px);
+  }
+  to {
+    transform: translate(0, 0);
+  }
+}
+
+/* §11 — the reorder moment. Each moved lesson row translates into its new
+   position; the stagger is applied inline per row. */
+@keyframes riso-reorder {
+  from {
+    transform: translateY(var(--reorder-from, 0));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@utility stream-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  background: var(--color-pink);
+  vertical-align: -0.15em;
+  animation: riso-caret 1s steps(2, start) infinite;
+}
+
+@utility ticker-scroll {
+  animation: riso-ticker 40s linear infinite;
+}
+
+/* ── Markdown inside lesson bodies ────────────────────────────────────────── */
+
+@utility prose-riso {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 19px;
+  line-height: 32px;
+  max-width: 68ch;
+
+  & > * + * {
+    margin-top: 16px;
+  }
+
+  & h1,
+  & h2,
+  & h3 {
+    font-family: var(--font-archivo), system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 28px;
+    margin-top: 24px;
+  }
+
+  & strong {
+    font-weight: 600;
+  }
+
+  & em {
+    font-style: italic;
+  }
+
+  & ul,
+  & ol {
+    padding-left: 24px;
+    list-style: disc;
+  }
+
+  & ol {
+    list-style: decimal;
+  }
+
+  & li + li {
+    margin-top: 8px;
+  }
+
+  & blockquote {
+    border-left: 3px solid var(--color-pink);
+    padding-left: 14px;
+    font-style: italic;
+  }
+
+  & code {
+    font-family: var(--font-dm-mono), ui-monospace, monospace;
+    font-size: 15px;
+    background: var(--color-paper-tint);
+    padding: 0 4px;
+  }
+}
+
+/* ── §8 Responsive — desktop-first, baseline 1280 ─────────────────────────── */
+
+@media (max-width: 1279px) {
+  .type-display-xl {
+    font-size: 48px;
+    line-height: 46px;
+  }
+}
+
+@media (max-width: 767px) {
+  .type-display-xl {
+    font-size: 38px;
+    line-height: 38px;
+  }
+
+  .type-display-l {
+    font-size: 32px;
+    line-height: 34px;
+  }
+
+  .type-display-m {
+    font-size: 24px;
+    line-height: 26px;
+  }
+}
+
+/* ── Accessibility ────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* The caret stays solid rather than disappearing mid-blink. */
+  .stream-caret {
+    opacity: 1 !important;
+  }
+}

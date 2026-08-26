@@ -104,7 +104,9 @@ services/
     knowledge/repository.py Chroma retrieval (read side only)
     tools/registry.py       MCP loading, tool allow-list, idempotent actions
   mcp-tools/server.py       Standalone MCP business-tool example
+  web/                      Next.js frontend for the tutoring POC (Journey 1)
 data/knowledge/             Seed policy documents
+docs/productDocs/           Product spec, design system, and ingestion fixture
 tests/e2e/                  Public API lifecycle test
 deploy/k8s/                 Portable production manifest
 ```
@@ -181,6 +183,29 @@ To see durability rather than take it on trust, pause a refund, then run
 
 Stop the stack with `make down`. Add `-v` to `docker compose down` only when you
 intentionally want to delete local Temporal, Chroma, and Redis data.
+
+## The tutoring POC frontend
+
+`services/web` is a separate product built on this repository: the chat-native
+tutoring POC specified in [`docs/productDocs/`](docs/productDocs/). It currently
+implements **Journey 1** — a Specialist turning raw material into a published
+course — and it runs standalone. No Temporal, no Chroma, no gateway.
+
+```bash
+make web-install
+make web-seed     # optional: puts the reference course in the studio
+make web-dev      # http://localhost:3000/studio
+```
+
+Ingestion defaults to `INGEST_MODE=mock`, which replays
+`docs/productDocs/fixtures/expected.json` and needs no API key.
+`INGEST_MODE=live` makes the real single-LLM call using the same
+`MODEL_PROVIDER` / `MODEL_NAME` settings as the worker. See
+[`services/web/README.md`](services/web/README.md).
+
+The agent runtime described above does not serve this app yet: the frontend owns
+`/api/courses/*` behind a single client, so moving ingestion onto the Go gateway
+and a Temporal workflow later is a swap rather than a rewrite.
 
 ## Logging
 

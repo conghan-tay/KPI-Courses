@@ -1,12 +1,15 @@
 import path from "node:path";
-import { rm } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
 /**
  * Journey 1 end to end: raw material → published course.
  *
- * Runs against INGEST_MODE=mock so the whole thing is deterministic and needs
- * no API key — see playwright.config.ts.
+ * This runs against the whole stack — Next proxying to the Go API, Postgres,
+ * Temporal, and a worker on MODEL_PROVIDER=fake replaying
+ * docs/productDocs/fixtures. Deterministic, and no model key required.
+ *
+ * It assumes a clean database, which is what `make test-e2e` gives it: the
+ * empty state is a designed screen and asserting it is worth the constraint.
  */
 
 // Playwright runs with services/web as the working directory.
@@ -14,13 +17,6 @@ const FIXTURE = path.resolve(
   process.cwd(),
   "../../docs/productDocs/fixtures/source.md"
 );
-
-const DATA_DIR = path.resolve(process.cwd(), ".data-e2e");
-
-test.beforeAll(async () => {
-  // Start from the designed empty state every run.
-  await rm(DATA_DIR, { recursive: true, force: true });
-});
 
 test("a specialist turns raw material into a published course", async ({
   page,
@@ -38,6 +34,13 @@ test("a specialist turns raw material into a published course", async ({
   await expect(page.getByLabel("Price")).toHaveValue("349");
 
   await page.getByRole("button", { name: "Build my course" }).click();
+
+  // No assertion on the streamed status lines here, deliberately. Replaying the
+  // fixture takes about a second end to end, so the ingestion panel is gone
+  // before a browser can reliably see it, and an assertion that passes on a slow
+  // machine and fails on a fast one is worse than none. The status stream is
+  // asserted frame by frame in tests/e2e/test_journey1_e2e.py, which reads the
+  // SSE response directly.
 
   // The review screen opens on Positions, with the seven stances from the
   // fixture — assertion A7's expected count.
@@ -87,6 +90,13 @@ test("a specialist turns raw material into a published course", async ({
   await page.getByRole("button", { name: "Back to the course" }).click();
   await page.goto("/studio");
   await expect(page.getByText("Published")).toBeVisible();
+
+  // The edit survived the round trip to Postgres, which the in-page optimistic
+  // update would have hidden.
+  await page.getByRole("link", { name: /Hold Your Number/ }).first().click();
+  await expect(page.getByLabel("Claim for stance 1")).toHaveValue(
+    "A price objection is never actually about price."
+  );
 });
 
 test("a course page never ships the argument to an unauthenticated reader", async ({
@@ -100,11 +110,9 @@ test("a course page never ships the argument to an unauthenticated reader", asyn
     `/api/courses/${courses[0].id}?audience=public`
   );
   const { course } = await response.json();
-  const body = await (
-    await request.get(`/api/courses/${courses[0].id}?audience=public`)
-  ).text();
+  const body = await response.text();
 
-  // DESIGN.md §4.5 — withheld on the server, not blurred in CSS. Assert on the
+  // DESIGN.md §4.5 — withheld by the Go API, not blurred in CSS. Assert on the
   // keys, and on a phrase from the fixture's argument that must never appear.
   expect(course.positions[0]).toHaveProperty("claim");
   expect(course.positions[0]).not.toHaveProperty("because");

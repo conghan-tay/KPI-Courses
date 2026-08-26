@@ -21,8 +21,10 @@ _CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 def inspect_user_text(text: str, max_chars: int) -> SafetyResult:
     """Normalize untrusted input and flag common prompt-injection attempts.
 
-    Flags are supplied to the graph rather than silently discarding the ticket. This
-    makes the policy auditable and lets the model answer the legitimate support portion.
+    Flags travel with the run rather than aborting it. The input here is a Specialist's
+    own corpus — manuscripts, podcast transcripts, an AMA thread — and a course is not a
+    threat because one sentence in it happened to look like a prompt. Recording the flag
+    keeps the policy auditable and leaves the judgement to a human.
     """
 
     cleaned = _CONTROL_CHARS.sub("", text).strip()[:max_chars]

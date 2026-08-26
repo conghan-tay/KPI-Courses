@@ -1,25 +1,23 @@
 [project]
-name = "support-agent-template"
+name = "kpi-courses-agent"
 version = "0.1.0"
-description = "Production-oriented LangGraph customer support reference project"
+description = "LangGraph course-ingestion pipeline for the chat-native tutoring POC"
 requires-python = ">=3.13,<3.15"
 dependencies = [
-  "chromadb==1.5.9",
   "langchain==1.3.15",
   "langchain-anthropic==1.5.6",
   "langchain-google-genai==4.3.3",
-  "langchain-mcp-adapters==0.3.2",
   "langchain-openai==1.4.3",
   "langgraph==1.2.11",
-  # MCP 2.0 is not yet supported by the current LangChain adapter release.
+  # Only services/mcp-tools needs this. That service is parked for Journey 3's
+  # four-tool loop; nothing in Journey 1 calls it.
   "mcp==1.26.0",
   "pydantic==2.13.4",
   "pydantic-settings==2.15.0",
   "python-dotenv==1.2.2",
-  "redis==8.1.0",
   "structlog==26.1.0",
   # The langgraph extra runs graph nodes as Temporal activities; pydantic lets the
-  # schemas in app/core/schemas.py cross the workflow/activity boundary directly.
+  # models in app/core/course_schemas.py cross the workflow/activity boundary directly.
   # Deliberately not the `langsmith` extra: it pins langsmith<0.9, while
   # langchain-core requires >=0.3.45,<1.0.0. Tracing works via LANGSMITH_* env vars.
   "temporalio[langgraph,pydantic]==1.31.0",
@@ -38,7 +36,16 @@ dev = [
 asyncio_mode = "auto"
 testpaths = ["services/agent/tests", "tests/e2e"]
 pythonpath = ["services/agent"]
-markers = ["e2e: tests that require the running container stack"]
+# `voice_card.register` is named by POC_UserJourney.md and carried by the fixture, and
+# pydantic notices it shadows a BaseModel attribute. Renaming the field would break the
+# contract with the Go structs and the zod schemas; the shadowing is harmless.
+filterwarnings = [
+  "ignore:Field name \"register\".*:UserWarning",
+]
+markers = [
+  "e2e: tests that require the running container stack",
+  "eval: assertions about model judgement; needs a real model and RUN_MODEL_EVAL=1",
+]
 
 [tool.ruff]
 line-length = 100
@@ -57,6 +64,10 @@ omit = [
   "services/agent/app/healthcheck.py",
   "services/agent/app/temporal/client.py",
   "services/agent/app/core/logging.py",
+  # The real model adapter is exercised by the eval suite against a live provider, not
+  # by unit tests; counting it here would only dilute the signal from code that has
+  # logic of its own.
+  "services/agent/app/core/ingest_model.py",
 ]
 
 [build-system]

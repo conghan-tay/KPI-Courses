@@ -4,10 +4,12 @@ import path from "node:path";
 import { FixtureSchema } from "@/lib/types";
 
 /**
- * The reference ingestion case lives in docs/productDocs/fixtures/ and is the
- * single source of truth for mock mode, the seed script and the unit tests —
- * so it is read from disk rather than copied into this app. `FIXTURE_DIR` lets
- * the container image point at wherever the docs were copied to.
+ * The reference ingestion case lives in docs/productDocs/fixtures/. It is read
+ * from disk rather than copied in, so there is exactly one copy of it and the
+ * Go, Python and TypeScript assertions are all checking the same bytes.
+ *
+ * Test-only. Ingestion itself runs in the Python worker, which replays this same
+ * file when MODEL_PROVIDER=fake.
  */
 const FIXTURE_DIR =
   process.env.FIXTURE_DIR ??

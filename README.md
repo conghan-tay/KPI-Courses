@@ -1,359 +1,324 @@
-# Production Agentic AI Template
+# Chat-Native Tutoring — Journey 1
 
-A production-oriented reference application for learning how an agent moves from a
-notebook into a service. The business case is intentionally simple: receive a customer
-support ticket, retrieve policy, inspect an order, draft and critique an answer, and
-pause for human approval before issuing a refund.
+A Specialist drops a folder of messy notes — a manuscript, podcast transcripts, an AMA
+thread — and ten minutes later has a live course, without ever writing a prompt. That is
+Journey 1 of the POC specified in
+[`docs/productDocs/POC_UserJourney.md`](docs/productDocs/POC_UserJourney.md), and it is
+what this repository implements.
 
-The public API is Go — the only API surface, not a proxy. The agent runtime is Python
-with LangChain, LangGraph, and LangSmith hooks, running as a Temporal worker: every
-graph node executes as a Temporal activity with its own timeout and retry policy, and
-Temporal's event history is what makes a multi-day approval pause durable. Retrieval
-uses Chroma, edge rate limiting uses Redis, and business tools are served over MCP. All
-external dependencies sit behind small interfaces so this repository can become the
-starting point for another domain.
+The interesting part is not the CRUD. It is that **a course's positions are the paid
+product** — the things this person believes that most people don't — and pulling them out
+of raw material is a judgement problem with expensive failure modes. A podcast guest
+arguing against the author reads exactly like the author being contrarian. A rule stated
+in chapter two and publicly walked back in a newsletter six months later reads like a
+strong opinion. A page of perfectly good craft reads like expertise. Get any of those
+wrong and you ship a tutor that argues, in the Specialist's voice, for things the
+Specialist does not believe.
 
-## What this demonstrates
-
-| Concept | Concrete implementation |
-|---|---|
-| Reasoning and routing | Typed classification followed by an explicit graph plan |
-| Planning | A structured `Plan` chooses a read tool or proposed business action |
-| Tool use | Allow-listed LangChain tools; order lookup is supplied over MCP |
-| RAG / knowledge base | Markdown policies embedded into Chroma and cited in answers |
-| Reflection | A typed critique can send a weak draft through one bounded revision loop |
-| Human in the loop | LangGraph `interrupt()` pauses refunds; a Temporal signal resumes them |
-| Durable execution | Temporal event history persists every graph step and the approval pause |
-| Retries and timeouts | Per-node activity retry policies; a flaky model call retries in isolation |
-| Model portability | One adapter selects OpenAI, Anthropic, Google Gemini, or a test fake |
-| Observability | Structured JSON logs, the Temporal Web UI, and opt-in LangSmith traces |
-| Safeguards | Input limits, prompt-injection flags, delimited RAG context, tool allow-list |
-| API hardening | Go edge API, typed validation, body limits, API key auth, Redis limits |
-| Correctness | Python workflow tests on a time-skipping Temporal server, Go tests, and E2E |
-
-The fake model and business actions are deterministic teaching adapters. They make the
-entire workflow testable without API cost, but they must not be mistaken for production
-AI or payment implementations.
+```
+Browser ──same-origin /api/courses/*──▶ Next.js (BFF)
+                                          │  uploads → text, cookie → identity
+                                          ▼
+                                     Go API ──▶ Postgres
+                                          │
+                                          │ gRPC: start / query / await
+                                          ▼
+                                     Temporal ──▶ Python worker
+                                                  LangGraph nodes as activities
+```
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    Client["API client"] -->|"HTTPS + API key"| Gateway["Go gateway (only API surface)"]
-    Gateway --> Redis["Redis rate limits"]
-    Gateway -->|"embed + upsert"| Chroma["Chroma knowledge base"]
-    Gateway -->|"gRPC: start / query / signal"| Temporal["Temporal"]
+    Browser["Browser"] -->|"same-origin"| Web["Next.js — screens + BFF"]
+    Web -->|"HTTPS + API key + specialist id"| Gateway["Go API"]
+    Gateway --> Postgres["Postgres — courses, lessons, users"]
+    Gateway --> Redis["Redis — rate limits"]
+    Gateway -->|"gRPC: start / query / await"| Temporal["Temporal"]
     Temporal --> Worker["Python worker: LangGraph nodes as activities"]
-    Worker --> Model["OpenAI / Anthropic / Gemini"]
-    Worker -->|"retrieval"| Chroma
-    Worker -->|"MCP"| Tools["Business tool service"]
-    Worker -.->|"optional traces"| LangSmith["LangSmith"]
+    Worker --> Model["Anthropic / OpenAI / Gemini / fixture"]
 ```
 
-The worker serves no HTTP. It polls a Temporal task queue, so it scales on queue
-backlog rather than request concurrency, and a deploy can replace it mid-approval
-without losing a ticket.
+**Who owns what.** Go owns persistence, validation, the publish rules, the public
+projection and the ingest SSE stream. The Python worker owns the model and returns a
+course; it has no database. Next owns file-to-text, identity and rendering — it is a BFF,
+not an API, so the browser never holds the gateway's key.
+
+The worker serves no HTTP. It polls a Temporal task queue, so it scales on queue backlog
+rather than request concurrency, and a deploy can replace it mid-ingestion without losing
+a course.
+
+### The ingestion pipeline
+
+`POC_UserJourney.md` sketches ingestion as "a single LLM call, streamed, ~30–60s". This
+is not that, and the reason is
+[`docs/productDocs/fixtures/README.md`](docs/productDocs/fixtures/README.md).
+
+The fixture's traps are not prompt problems, they are attention problems: one pass over
+six heterogeneous sources has to hold *who is speaking*, *what was walked back later* and
+*what is merely correct* in mind at once, and it drops one. So each source is read on its
+own, and the decisions are made afterwards, when every source is in view.
 
 ```mermaid
 flowchart TD
-    Start(["Ticket"]) --> Safety["Normalize + safety flags"]
-    Safety --> Classify["Typed classification"]
-    Classify --> Retrieve["Retrieve policy"]
-    Retrieve --> Plan["Structured plan"]
-    Plan --> ReadTool["Execute allow-listed read tools"]
-    ReadTool --> Draft["Grounded draft"]
-    Draft --> Critique["Reflection / critique"]
-    Critique -->|"weak and loop budget remains"| Draft
-    Critique -->|"acceptable"| Risk{"Side effect?"}
-    Risk -->|"no"| Done(["Completed"])
-    Risk -->|"yes"| Pause["Durable approval interrupt"]
-    Pause -->|"reject or deadline"| Rejected(["Rejected"])
-    Pause -->|"approve"| Action["Idempotent business action"]
-    Action --> Done
+    Start(["Corpus"]) --> Sanitize["Normalize + injection flags"]
+    Sanitize --> Segment["Split back into source files"]
+    Segment --> Read["Read one source"]
+    Read -->|"more sources"| Read
+    Read --> Resolve["Attribution · retraction · dedup · craft filter"]
+    Resolve --> Verify{"Every quote verbatim?"}
+    Verify -->|"no, budget remains"| Repair["Find a real anchor"]
+    Repair --> Verify
+    Verify -->|"yes"| Plan["Plan 5–9 capability objectives"]
+    Plan --> Write["Write one lesson"]
+    Write -->|"more lessons"| Write
+    Write --> Voice["Read the voice"]
+    Voice --> Assemble["Renumber · clear unanchored quotes"]
+    Assemble --> Done(["Course"])
 ```
 
-Each box above maps to a node in `graph/workflow.py`. Nodes marked
-`execute_in: "activity"` become Temporal activities; the pause and the routers run
-inline in the workflow. A completed refund's event history reads:
+Each box maps to a node in
+[`services/agent/app/graph/ingest.py`](services/agent/app/graph/ingest.py). Nodes marked
+`execute_in: "activity"` become Temporal activities with their own timeout and retry
+policy; the pure ones (`sanitize`, `segment`, `verify_quotes`, `assemble`) run inline in
+the workflow. The two self-loops are deliberate: one activity per source file and one per
+lesson means a flaky call on lesson four retries in isolation instead of restarting the
+ingestion, and one enormous generation cannot hit a max-token wall.
 
+Open the Temporal UI (`make ui`) during a run and you will see exactly that shape.
+
+## What this demonstrates
+
+| Concept | Concrete implementation |
+|---|---|
+| Multi-step agent pipeline | Ten LangGraph nodes with two bounded loops and three routers |
+| Durable execution | Temporal event history persists every step; a run survives a worker restart |
+| Retries and timeouts | Per-node activity retry policies; one lesson's failure retries alone |
+| Streaming progress | Node → activity signal → workflow query → SSE, with no percentage to fake |
+| Grounding | Every position carries a verbatim source quote, verified in code |
+| Defence in depth | Attribution is enforced by the graph, not only asked for in the prompt |
+| Model portability | One `IngestionModel` interface selects Anthropic, OpenAI, Gemini, or a fixture |
+| Authorization | Ownership checked per course; the public projection is an allowlist |
+| API hardening | Go edge API, typed validation, body limits, API key auth, Redis limits |
+| Correctness | Go, Python and TypeScript unit tests, plus a browser and API run over the real stack |
+| Model evaluation | The fixture's judgement traps, as an opt-in eval against a live provider |
+
+## Quick start
+
+Requirements: Docker with Compose.
+
+```bash
+cp .env.example .env
+make run                 # postgres, temporal, gateway, worker, web
+open http://localhost:3000/studio
 ```
-support.classify -> support.retrieve -> support.plan -> support.execute_read_tools
-  -> support.draft -> support.reflect -> SIGNAL submit_decision -> support.apply_action
+
+That works with no API key. `MODEL_PROVIDER` defaults to `fake`, which replays
+`docs/productDocs/fixtures/expected.json` step by step — deterministic, instant, and what
+CI runs. For real ingestion:
+
+```dotenv
+MODEL_PROVIDER=anthropic
+MODEL_NAME=claude-opus-5
+ANTHROPIC_API_KEY=...
 ```
 
-`apply_action` is a separate node from `approval` on purpose: the side effect can only
-be scheduled after the signal, so no retry of the reasoning steps can ever re-enter it.
+Then walk it: `BUILD A COURSE` → drop `docs/productDocs/fixtures/source.md` → watch the
+halftone panel stream a status line per source and per lesson → the review screen opens
+on **Positions** → reorder a lesson, soften a claim, edit the voice card → `PREVIEW AS A
+STUDENT` → `PUBLISH`.
 
-## Repository map and key entry points
+```bash
+make seed-course         # optional: the reference course, without waiting on a model
+make ui                  # Temporal: one activity per source file and per lesson
+docker compose logs -f worker
+```
+
+An empty studio is a designed screen — "No courses yet. Make one." — which is why seeding
+is opt-in.
+
+## Repository map
 
 ```text
 services/
-  gateway/                  Go public API — validation, auth, rate limits, Temporal client
-    internal/api/           The public contract; mirrors the Python schemas
-    internal/tickets/       Start / query / signal the durable workflow
-    internal/knowledge/     Embeddings + Chroma writes (ingestion lives here)
-    internal/httpapi/       Routing, auth, error mapping
+  gateway/                        Go API — the only thing that touches Postgres
+    internal/api/types.go         The wire contract; mirrors the Pydantic and zod schemas
+    internal/courses/             Draft rules, publish rules, public projection, Temporal seam
+    internal/courses/ingest.go    The completion watcher and the SSE stream
+    internal/store/               Repository interface, pgx implementation, embedded migrations
+    internal/httpapi/             Routing, auth, error mapping
+    cmd/seed/                     Fixture → a ready course, without a model
   agent/app/
-    worker.py               Temporal worker entrypoint (start here)
-    temporal/workflows.py   The durable workflow: pause, signal, approval deadline
-    temporal/mapping.py     Pure graph-state -> API-state projection
-    graph/workflow.py       The LangGraph workflow and per-node execution policy
-    graph/state.py          Durable typed state passed between nodes
-    core/models.py          Provider-neutral model adapter and typed outputs
-    core/safety.py          Input and retrieved-context safety boundaries
-    knowledge/repository.py Chroma retrieval (read side only)
-    tools/registry.py       MCP loading, tool allow-list, idempotent actions
-  mcp-tools/server.py       Standalone MCP business-tool example
-  web/                      Next.js frontend for the tutoring POC (Journey 1)
-data/knowledge/             Seed policy documents
-docs/productDocs/           Product spec, design system, and ingestion fixture
-tests/e2e/                  Public API lifecycle test
-deploy/k8s/                 Portable production manifest
+    worker.py                     Temporal worker entrypoint (start here)
+    graph/ingest.py               The pipeline and per-node execution policy
+    graph/prompts.py              One prompt per step, each carrying one fixture trap
+    graph/anchors.py              Verbatim quote checking — assertion A2, in the product
+    graph/progress.py             How a status line escapes an activity
+    core/ingest_model.py          Provider-neutral model adapter, and the fixture replay
+    core/course_schemas.py        The Temporal payload contract
+    core/safety.py                Input safety boundary
+    temporal/course_workflow.py   The durable workflow, its query and its signal
+  web/                            Next.js screens, and the BFF in front of the Go API
+    lib/gateway.ts                The one place this app talks to Go
+    lib/extract.ts                Uploads → text, including the "this is a scan" state
+    app/api/courses/              Thin proxies; only `ingest` does more than forward
+  mcp-tools/                      Parked for Journey 3's four-tool loop
+docs/productDocs/                 Product spec, design system, and the ingestion fixture
+tests/e2e/                        Journey 1 against the running stack
+deploy/k8s/                       Portable production manifest
 ```
 
-The best extension points are:
+The best extension points:
 
-- `build_support_graph()` to add, remove, or reorder workflow capabilities.
-- Node `metadata` in `graph/workflow.py` to change where a step runs and how it retries.
-- `SupportModel` to add a provider or local model without changing graph nodes.
-- `KnowledgeRepository` (Python, read) and `knowledge.Repository` (Go, write) to
-  replace Chroma with pgvector or another store.
-- `ToolRegistry` and the MCP server to connect real business systems.
-- `require_approval_for` to change which actions require a reviewer.
+- `build_ingest_graph()` to add, remove or reorder pipeline steps.
+- Node `metadata` in `graph/ingest.py` to change where a step runs and how it retries.
+- `IngestionModel` to add a provider or a local model without touching a graph node.
+- `store.Repository` to replace Postgres.
+- `MAX_LESSONS` / `MAX_POSITIONS` for the shape of a course.
 
 Two constraints are worth knowing before you edit the graph, both enforced by the
 Temporal LangGraph plugin:
 
 - Node callables must be importable from a named module. That is why the nodes are
-  methods on `SupportNodes` rather than closures — closures and lambdas are rejected.
+  methods on `IngestNodes` rather than closures — closures and lambdas are rejected.
 - Conditional-edge routers must be `async def`. LangGraph dispatches a sync router
   through `run_in_executor`, which the deterministic workflow event loop does not
   implement.
 
-## Quick start
-
-Requirements: Docker with Compose. For local development without containers, install
-Python 3.13, `uv`, and Go 1.26.
-
-```bash
-cp .env.example .env
-# Put OPENAI_API_KEY in .env (never commit it).
-docker compose up --build -d --wait
-make seed
-```
-
-`OPENAI_API_KEY` is required even when the chat provider is Anthropic or Gemini:
-knowledge ingestion embeds through OpenAI.
-
-The public API is at `http://localhost:8080`. The Temporal Web UI is at
-`http://localhost:8233` (`make ui`) — open it to watch a run's activities, its pause,
-and the signal that resumes it.
-
-Runs are durable and asynchronous, so creating a ticket returns immediately and you poll
-for progress:
-
-```bash
-curl -sS http://localhost:8080/v1/tickets \
-  -H 'X-API-Key: local-api-key' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "customer_id": "customer-42",
-    "message": "Where is my order?",
-    "order_id": "order-123"
-  }'
-# -> 202 {"ticket_id":"ticket-...","status":"running"}
-
-curl -sS http://localhost:8080/v1/tickets/TICKET_ID -H 'X-API-Key: local-api-key'
-# -> {"status":"completed","answer":"...","citations":["shipping-policy"]}
-```
-
-A refund request reaches `waiting_approval` with a `pending_action`. Resume the same
-durable run with:
-
-```bash
-curl -sS http://localhost:8080/v1/tickets/TICKET_ID/decision \
-  -H 'X-API-Key: local-api-key' \
-  -H 'Content-Type: application/json' \
-  -d '{"decision":"approve","reviewer":"manager-7","comment":"Policy verified"}'
-# -> 202; poll GET again until "completed"
-```
-
-To see durability rather than take it on trust, pause a refund, then run
-`docker compose restart worker` and approve it. The run resumes on a brand-new process.
-
-Stop the stack with `make down`. Add `-v` to `docker compose down` only when you
-intentionally want to delete local Temporal, Chroma, and Redis data.
-
-## The tutoring POC frontend
-
-`services/web` is a separate product built on this repository: the chat-native
-tutoring POC specified in [`docs/productDocs/`](docs/productDocs/). It currently
-implements **Journey 1** — a Specialist turning raw material into a published
-course — and it runs standalone. No Temporal, no Chroma, no gateway.
-
-```bash
-make web-install
-make web-seed     # optional: puts the reference course in the studio
-make web-dev      # http://localhost:3000/studio
-```
-
-Ingestion defaults to `INGEST_MODE=mock`, which replays
-`docs/productDocs/fixtures/expected.json` and needs no API key.
-`INGEST_MODE=live` makes the real single-LLM call using the same
-`MODEL_PROVIDER` / `MODEL_NAME` settings as the worker. See
-[`services/web/README.md`](services/web/README.md).
-
-The agent runtime described above does not serve this app yet: the frontend owns
-`/api/courses/*` behind a single client, so moving ingestion onto the Go gateway
-and a Temporal workflow later is a swap rather than a rewrite.
-
-## Logging
-
-```bash
-docker compose logs -f gateway worker
-```
-
-The Temporal Web UI at `http://localhost:8233` is usually the faster way to debug a run:
-it shows every activity, its attempts, its input and output, and where a run is parked.
-
 ## API
+
+The browser talks to the Next app; the Next app talks to this. Both surfaces exist
+because the API key must not reach a browser.
 
 | Method | Route | Purpose | Success |
 |---|---|---|---|
-| `GET` | `/healthz` | Gateway liveness | `200` |
-| `GET` | `/readyz` | Gateway readiness, including Temporal reachability | `200` / `503` |
-| `POST` | `/v1/tickets` | Start a durable support run | `202` |
-| `GET` | `/v1/tickets/{ticket_id}` | Read current/completed run state | `200` |
-| `POST` | `/v1/tickets/{ticket_id}/decision` | Approve or reject a pending action | `202` |
-| `POST` | `/v1/knowledge` | Upsert knowledge documents | `200` |
+| `GET` | `/healthz` | Liveness. Never depends on Temporal | `200` |
+| `GET` | `/readyz` | Readiness, including Temporal reachability | `200` / `503` |
+| `GET` | `/v1/courses` | The studio list, scoped to the caller | `200` |
+| `POST` | `/v1/courses/ingest` | Text + meta → a draft and an SSE stream | `200` |
+| `GET` | `/v1/courses/{id}` | The owner's copy, or `?audience=public` | `200` |
+| `PATCH` | `/v1/courses/{id}` | Partial edits from the review screen | `200` |
+| `POST` | `/v1/courses/{id}/publish` | Go live, or `409` with every blocker | `200` |
+| `POST` | `/v1/courses/{id}/reingest` | Retry from stored source text | `200` |
+| `POST` | `/v1/courses/{id}/positions/{i}/soften` | One claim rewrite, via a workflow | `200` |
+| `POST` | `/v1/knowledge` | Upsert knowledge documents (parked; see below) | `200` |
 
-Statuses are `running`, `waiting_approval`, `completed`, and `rejected`. A decision on a
-run that is not paused returns `409`; an unknown ticket returns `404`.
+Every route except health requires `X-API-Key` or `Authorization: Bearer ...`.
 
-All routes except health require `X-API-Key` or `Authorization: Bearer ...`. In a real
-customer application, replace the shared key with JWT/OAuth validation at the gateway.
-There is no second internal API key any more: the gateway reaches the agent over
-Temporal's authenticated gRPC connection, and the worker exposes no port at all.
+`POST /v1/courses/ingest` takes **text, not files**. Turning an upload into text lives in
+`services/web/lib/extract.ts`: pdf.js is materially better at it than anything in Go, the
+designed *"This looks like a scan. Paste the text instead."* state is already built around
+it, and raw PDF bytes never go near Temporal's payload limit.
 
-Because `GET /v1/tickets/{id}` is served by a Temporal query, it needs a live worker to
-answer. With every worker down the gateway correctly reports `502`.
+### Errors
 
-## Model configuration
+One envelope, everywhere, because the screens branch on `code`:
 
-The default is OpenAI:
-
-```dotenv
-MODEL_PROVIDER=openai
-MODEL_NAME=gpt-5-mini
-OPENAI_API_KEY=...
+```json
+{"error": {"code": "not_publishable", "message": "Set a price.", "blockers": ["…", "…"]}}
 ```
 
-Change only configuration to try another installed provider:
+### Identity, and one thing to be honest about
 
-```dotenv
-MODEL_PROVIDER=anthropic
-MODEL_NAME=claude-sonnet-4-6
-ANTHROPIC_API_KEY=...
+The gateway trusts `X-Specialist-Id` because the API key gates that hop and the only
+caller is the web app, which resolves it from a signed-in cookie. That is the server-side
+half of the `SIGN IN AS` switcher, and it is exactly as strong as POC_UserJourney.md §0
+says — "real auth is a Monday problem". **Anything holding the API key can act as any
+seeded user.** Replacing this with a real token is the first thing to do before the
+service meets a real user.
+
+## Ingestion, and how it can fail
+
+The draft row is written **before** the model runs. That single ordering is what makes
+every failure recoverable: a run that times out leaves a course with its source text
+intact and a `[RETRY INGESTION]` button, not a lost upload.
+
+Two independent things then happen. A **completion watcher** on its own context waits for
+the workflow and persists the result — so closing the tab cannot lose a finished course —
+and on boot the gateway re-attaches a watcher to every run still in flight, so a deploy
+mid-ingestion cannot either. Separately, the request **streams** status: it reads lines
+from the workflow query but terminal state from the database, so a "ready" can never
+arrive before the lessons it promises.
+
+All four of these are built, and worth trying:
+
+```bash
+# Closed tab: start an ingest, close the tab, reopen /studio a minute later.
+# Restart:    start an ingest, then `docker compose restart gateway`.
+# Failure:    `docker compose stop worker`, ingest, then start it and retry.
+# Scan:       drop an image-only PDF and read the message.
 ```
-
-or:
-
-```dotenv
-MODEL_PROVIDER=google
-MODEL_NAME=gemini-3.1-pro-preview
-GOOGLE_API_KEY=...
-```
-
-Model names evolve faster than application code, so verify availability in your account
-before deployment. `MODEL_PROVIDER=fake` is reserved for tests and demos.
-
-Retrieval uses OpenAI `text-embedding-3-small` independently of the chat provider.
-`EMBEDDING_MODEL` and `CHROMA_COLLECTION` must hold the same value on the gateway and
-the worker: the gateway writes the vectors the worker queries, and a mismatch degrades
-retrieval silently rather than loudly.
-
-## LangSmith
-
-LangChain/LangGraph automatically picks up the standard tracing environment variables
-inside activities:
-
-```dotenv
-LANGSMITH_TRACING=true
-LANGSMITH_API_KEY=...
-LANGSMITH_PROJECT=support-agent-template
-```
-
-Temporal also ships a LangSmith plugin, but this project does not use it: its extra pins
-`langsmith<0.9` while `langchain-core` requires `>=0.3.45,<1.0.0`, so installing it would
-force an unsatisfiable resolution. The environment variables above cover the same ground.
-
-Create separate projects for development, staging, and production. Before sending real
-customer traffic, define a redaction/sampling policy and build a LangSmith dataset from
-the deterministic test cases plus anonymized failures. Useful evaluation dimensions are
-groundedness, citation correctness, correct tool selection, approval compliance, answer
-quality, latency, and cost.
 
 ## Tests and quality checks
 
-Install the locked toolchain and dependencies:
-
 ```bash
-make install
+make lint                # ruff, gofmt + go vet, eslint + tsc
+make test-unit           # pytest, go test -race, vitest
+make test-e2e            # the whole stack: browser first, then API
+make eval                # the fixture's traps against a real model (costs money)
 ```
 
-Run fast checks:
+The fixture in [`docs/productDocs/fixtures/`](docs/productDocs/fixtures/) is one
+end-to-end test case with seven assertions, and the split between what is *tested* and
+what is *evaluated* is deliberate:
 
-```bash
-make lint
-make test-unit
-```
+- **A2 (quote anchoring)** is a string match, so it runs in CI — and in the product, on
+  every ingestion, clearing any quote it cannot find rather than shipping a fabricated
+  citation.
+- **A1 and A7** (lesson shape, position count) are enforced in code as caps, and tested.
+- **A3 (the guest trap)** is enforced twice: the prompt asks the reader to mark who spoke,
+  and `resolve_positions` then *drops* those candidates in code. A model that forgets rule
+  one still cannot produce a tutor arguing a guest's position.
+- **A3–A6 as judgement** — did the model actually notice the walkback, the restatement,
+  the craft? — cannot be checked by a fixture that replays the right answer. Those are
+  `make eval`, against a live provider, marked and skipped by default. Run them before and
+  after changing `graph/prompts.py`.
 
-Python workflow tests run against Temporal's time-skipping test server, so the 72-hour
-approval deadline resolves in milliseconds and the whole suite finishes in seconds. No
-Temporal server or Docker is needed.
-
-Run the real public API against the container stack (fake chat model, real gateway,
-Temporal, Chroma, Redis, MCP startup, and approval resume):
-
-```bash
-make test-e2e
-```
-
-This one does need `OPENAI_API_KEY`: the chat model is faked, but retrieval uses real
-embeddings, and proving that the gateway's writes are readable by the worker is much of
-the point of the E2E suite.
-
-Python tests cover graph routing, RAG boundaries, safeguards, the approval deadline, and
-signal handling. Go tests cover edge authentication, request validation, HTTP error
-mapping, and the exact Chroma/embeddings wire format. CI repeats these checks, runs Go's
-race detector, and builds all application images.
+`make test-e2e` runs the browser smoke first, because it asserts the designed empty state
+and the API suite leaves courses behind.
 
 ## Production deployment
 
-Use Temporal Cloud or a self-hosted Temporal cluster; use managed Redis; use Chroma Cloud
-or a persistent Chroma deployment. Run the gateway publicly and keep the worker and MCP
-tool service on private networking — the worker needs no ingress whatsoever. The portable
-Kubernetes example and cloud-service mapping are in [`docs/deployment.md`](docs/deployment.md).
+Use Temporal Cloud or a self-hosted cluster; use managed Postgres and Redis. Run the
+gateway and the web app publicly and keep the worker on private networking — it needs no
+ingress whatsoever. The portable Kubernetes example is in
+[`docs/deployment.md`](docs/deployment.md).
 
-Production work that is intentionally left domain-specific:
+Work that is intentionally left undone:
 
-- Replace the deterministic order and refund implementations with authenticated APIs.
-- Store refund idempotency in the destination business system, not process memory.
-- Add tenant-aware JWT authorization and tenant-scoped knowledge filtering.
-- Add provider moderation and organization policy checks for your risk profile.
-- Set a Temporal retention policy and archival for closed workflow histories.
-- Add streaming only after the approval UX and error semantics are settled.
+- Real authentication, replacing the trusted `X-Specialist-Id` header.
+- Tenant-aware authorization and tenant-scoped courses.
+- Provider moderation and organization policy checks for your risk profile.
+- A Temporal retention policy and archival for closed histories.
+- Object storage for original uploads; only the extracted text is kept today.
+
+## What is parked
+
+Journeys 2 (catalog, course page, sample chat, checkout) and 3 (the tutor loop, the four
+tools, citation chips) are not built. Two things stay wired for them rather than deleted:
+
+- **Chroma** and `POST /v1/knowledge` — nothing reads these vectors back yet. Journey 1
+  needs no RAG at all: POC_UserJourney.md §0 is explicit that a course is under 60k tokens
+  and the whole thing goes in the prompt.
+- **`services/mcp-tools`** — it currently serves demo tools from the support-ticket
+  reference application this repository grew out of, and nothing calls them. Journey 3's
+  loop is four tools (`get_lesson`, `mark_progress`, `quiz`, `ask_specialist`) and this is
+  where they go.
+
+Everything Journey 1 built — `PositionCard`, `SyllabusRail`, `ProgressMeter`, `Thread`,
+the `users`/`courses`/`lessons` tables, the SSE plumbing, the fixture-model convention —
+is something those journeys reuse.
 
 ## Why the services are split
 
-Go owns the stable, high-concurrency public contract and every cross-cutting edge
-concern: authentication, validation, rate limiting, HTTP semantics, and knowledge
-ingestion, which is plain CRUD and needs no workflow. Python owns the fast-moving model
-ecosystem and the LangGraph reasoning. Temporal sits between them and owns durability,
-retries, timeouts, and the human pause — which is why there is no application database
-here at all, and why a refund can wait three days for a reviewer across any number of
-deploys. MCP keeps business tools independent of the agent process. Redis handles only
-disposable edge counters; Chroma is hidden behind a repository interface on both sides.
+Go owns the stable, high-concurrency public contract and every cross-cutting edge concern:
+authentication, validation, rate limiting, HTTP semantics, and persistence. Python owns
+the fast-moving model ecosystem and the LangGraph pipeline. Temporal sits between them and
+owns durability, retries and timeouts — which is why a two-minute ingestion survives a
+deploy, and why a wedged model call becomes a retryable draft rather than a spinner
+forever.
 
-This separation gives future projects clear seams without turning a small teaching
-example into a large microservice estate.
+Next sits in front as a BFF rather than as a second API. It exists to keep the API key out
+of the browser and to do the one thing genuinely better done in JavaScript, which is
+pulling text out of a PDF.

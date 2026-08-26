@@ -146,7 +146,7 @@ export function PositionCard({
 /**
  * The variant a stranger sees on /c/:slug, and what the review screen's preview
  * panel renders. `because` is not hidden — it was never sent. See
- * lib/serialize.ts and DESIGN.md §4.5: a CSS blur is one devtools inspection
+ * DESIGN.md §4.5: a CSS blur is one devtools inspection
  * away from giving the product away.
  */
 export function LockedPositionCard({ claim }: { claim: string }) {

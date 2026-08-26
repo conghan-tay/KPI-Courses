@@ -8,7 +8,7 @@ package knowledge
 import (
 	"context"
 
-	"github.com/example/support-agent/services/gateway/internal/api"
+	"github.com/example/kpi-courses/services/gateway/internal/api"
 )
 
 // Repository is the write side of the knowledge base. It mirrors the Python

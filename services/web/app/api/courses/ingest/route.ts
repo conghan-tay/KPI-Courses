@@ -5,35 +5,45 @@ import {
   joinCorpus,
   type ExtractedFile,
 } from "@/lib/extract";
-import { newDraftCourse } from "@/lib/courses";
-import { streamIngestion } from "@/lib/ingest/stream";
-import { courseStore } from "@/lib/store";
-import { getCurrentUser } from "@/lib/session";
+import { errorResponse, proxyStream } from "@/lib/gateway";
 import { CourseMetaSchema } from "@/lib/types";
 
-// POST /api/courses/ingest — files + meta → draft course.
-//
-// Two response shapes on purpose. Anything we can decide before the model runs
-// (bad price, a scanned PDF) comes back as a normal JSON error, because the
-// dropzone needs to put the message next to the field. Once ingestion starts,
-// the response becomes an SSE stream: the panel shows a line of streamed status
-// and no percentage it can't honour (DESIGN.md §4.14).
+/**
+ * POST /api/courses/ingest — files + meta → a draft course and a stream.
+ *
+ * This is the one route that is more than a proxy, and the reason is upload
+ * handling. Turning a dropped PDF into text stays here, in front of the Go API:
+ * pdf.js is materially better at it than anything in Go, the designed "this
+ * looks like a scan" state is already built around `lib/extract.ts`, and raw
+ * file bytes never go near Temporal's payload limit. The gateway's ingest
+ * endpoint takes text.
+ *
+ * Two response shapes, on purpose. Anything decidable before the model runs — a
+ * bad price, a scanned PDF, forty words of material — comes back as ordinary
+ * JSON, because the dropzone needs to put the message next to the field. Once
+ * ingestion starts the response becomes SSE: a line of streamed status and no
+ * percentage we can't honour (DESIGN.md §4.14).
+ */
 
 export const dynamic = "force-dynamic";
 
+// Mirrors MaxSourceChars in services/gateway/internal/api/types.go. Trimming
+// here means a paste bomb is cut before it crosses the wire rather than after.
 const MAX_SOURCE_CHARS = 400_000;
 
-export async function POST(request: Request) {
-  const user = await getCurrentUser();
+// Below this there is nothing to build a course from, and a model asked to try
+// will invent one. The gateway enforces the same floor.
+const MIN_SOURCE_CHARS = 200;
 
+export async function POST(request: Request) {
   let form: FormData;
   try {
     form = await request.formData();
   } catch {
-    return Response.json(
-      { error: { code: "bad_request", message: "Expected a multipart form." } },
-      { status: 400 }
-    );
+    return errorResponse(400, {
+      code: "bad_request",
+      message: "Expected a multipart form.",
+    });
   }
 
   const meta = CourseMetaSchema.safeParse({
@@ -43,46 +53,31 @@ export async function POST(request: Request) {
   });
 
   if (!meta.success) {
-    return Response.json(
-      {
-        error: {
-          code: "invalid_meta",
-          message: "Check the course details.",
-          fields: fieldErrors(meta.error.issues),
-        },
-      },
-      { status: 400 }
-    );
+    return errorResponse(400, {
+      code: "invalid_meta",
+      message: "Check the course details.",
+      fields: fieldErrors(meta.error.issues),
+    });
   }
 
   const uploads = form.getAll("files").filter((v): v is File => v instanceof File);
   const pasted = String(form.get("pasted_text") ?? "").trim();
 
   if (uploads.length === 0 && !pasted) {
-    return Response.json(
-      {
-        error: {
-          code: "no_source",
-          message: "Drop a file or paste your material first.",
-        },
-      },
-      { status: 400 }
-    );
+    return errorResponse(400, {
+      code: "no_source",
+      message: "Drop a file or paste your material first.",
+    });
   }
 
   const extracted: ExtractedFile[] = [];
   for (const upload of uploads) {
     if (!isSupportedFile(upload.name)) {
-      return Response.json(
-        {
-          error: {
-            code: "unsupported_type",
-            message: `${upload.name} isn't markdown, plain text, or a PDF.`,
-            file: upload.name,
-          },
-        },
-        { status: 415 }
-      );
+      return errorResponse(415, {
+        code: "unsupported_type",
+        message: `${upload.name} isn't markdown, plain text, or a PDF.`,
+        file: upload.name,
+      });
     }
     try {
       extracted.push(await extractFile(upload));
@@ -90,16 +85,11 @@ export async function POST(request: Request) {
       if (error instanceof ExtractError) {
         // `no_text_layer` is the designed scan state: the dropzone switches to
         // the paste tab and says so, rather than showing a generic failure.
-        return Response.json(
-          {
-            error: {
-              code: error.code,
-              message: error.message,
-              file: error.fileName,
-            },
-          },
-          { status: 422 }
-        );
+        return errorResponse(422, {
+          code: error.code,
+          message: error.message,
+          file: error.fileName,
+        });
       }
       throw error;
     }
@@ -109,35 +99,27 @@ export async function POST(request: Request) {
     extracted.push({ name: "pasted text", text: pasted, meta: {} });
   }
 
+  // The per-file headers joinCorpus writes are not decoration: the graph splits
+  // the corpus back apart on them, and reading a manuscript separately from a
+  // podcast transcript is what makes the attribution rule possible at all.
   const sourceText = joinCorpus(extracted).slice(0, MAX_SOURCE_CHARS);
-  if (sourceText.trim().length < 200) {
-    return Response.json(
-      {
-        error: {
-          code: "too_short",
-          message:
-            "There isn't enough material here to build a course from. Drop more, or paste the text.",
-        },
-      },
-      { status: 422 }
-    );
+  if (sourceText.trim().length < MIN_SOURCE_CHARS) {
+    return errorResponse(422, {
+      code: "too_short",
+      message:
+        "There isn't enough material here to build a course from. Drop more, or paste the text.",
+    });
   }
 
-  const draft = await courseStore.create(
-    newDraftCourse({
-      user,
-      meta: meta.data,
-      sourceText,
-      sourceFiles: extracted.map((file) => file.name),
-    })
-  );
-
-  return streamIngestion(draft.id, {
-    specialistName: user.name,
-    title: meta.data.title,
-    tagline: meta.data.tagline,
-    sourceText,
-    fileNames: extracted.map((file) => file.name),
+  return proxyStream("/v1/courses/ingest", {
+    method: "POST",
+    body: {
+      title: meta.data.title,
+      tagline: meta.data.tagline,
+      price_cents: meta.data.price_cents,
+      source_text: sourceText,
+      source_files: extracted.map((file) => file.name),
+    },
   });
 }
 

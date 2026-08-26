@@ -70,7 +70,11 @@ export async function getCourse(id: string): Promise<Course> {
   return course;
 }
 
-/** The projection a stranger gets. See lib/serialize.ts. */
+/**
+ * The projection a stranger gets. Applied by the Go API — see
+ * ToPublic in services/gateway/internal/courses/courses.go — so the locked
+ * cards genuinely have nothing to reveal.
+ */
 export async function getPublicCourse(id: string): Promise<PublicCourse> {
   const { course } = await request<{ course: PublicCourse }>(
     `/api/courses/${id}?audience=public`

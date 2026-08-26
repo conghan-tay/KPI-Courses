@@ -1,5 +1,13 @@
 # Journey 1 Frontend — Specialist: raw material → published course
 
+> **Historical record.** This plan shipped as written. The seam it deliberately left open —
+> "the API it talks to is served by the web app's own route handlers … so the real Go backend
+> can replace it later without touching a screen" — has since been closed by
+> [`Journey1_Backend_Plan.md`](Journey1_Backend_Plan.md). `INGEST_MODE`, `lib/store.ts`,
+> `lib/serialize.ts` and `lib/ingest/` no longer exist; ingestion runs as a LangGraph pipeline
+> on a Temporal worker behind a Go API. No screen or component changed, which is the part
+> this plan got right.
+
 ## Context
 
 `docs/productDocs/POC_UserJourney.md` specifies a chat-native tutoring POC (Specialist publishes a

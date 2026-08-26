@@ -8,8 +8,5 @@ coverage.xml
 .coverage
 dist/
 bin/
-data/chroma/
-data/postgres/
-data/redis/
 .DS_Store
 

@@ -139,7 +139,7 @@ export type CourseSummary = Pick<
 /**
  * Everything a stranger is allowed to see, and nothing else — an allowlist, so
  * a field added to `Course` later is withheld by default rather than leaked by
- * default. See lib/serialize.ts and DESIGN.md §4.5.
+ * default. Applied server-side by the Go API; see DESIGN.md §4.5.
  */
 export type PublicCourse = Pick<
   Course,

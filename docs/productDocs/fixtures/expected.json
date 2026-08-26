@@ -1,0 +1,175 @@
+{
+  "course": {
+    "slug": "hold-your-number",
+    "title": "Hold Your Number",
+    "tagline": "The deal is won or lost long before anyone says a price.",
+    "price_cents": 34900,
+    "status": "draft"
+  },
+
+  "lessons": [
+    {
+      "ord": 1,
+      "title": "The Objection You Hear Is Not The One You Have",
+      "objective": "Can take a lost deal and place the failure in one of exactly two places — no signing authority, or no stated cost of the problem — and say which, out loud, without touching the price.",
+      "key_points": [
+        "\"They went with someone cheaper\" is a report, not a diagnosis; the first question is always what they compared it to.",
+        "Eight times in ten the seller cannot name the competitor, the scope, or the number — which means there was no comparison, only a polite exit.",
+        "There are two upstream failures and no third: you were talking to someone who cannot sign, or the buyer never said what the problem costs them.",
+        "Responding to a price objection with price moves — discount, extra tier, new deck — is treatment applied to the wrong organ."
+      ],
+      "body_md": "Every pricing problem arrives disguised as a pricing problem. Somebody forwards you a lost deal and the note says they went with someone cheaper.\n\nAsk one question: what did they compare you to? Which firm, what scope, what number. Most of the time nobody knows, because nobody asked, because \"too expensive\" is how a buyer ends a conversation politely.\n\nThe pump business teaches this faster than services does. In a plant, the price meeting is ninety minutes of argument and the outcome was settled weeks earlier, when the maintenance engineer wrote the spec. Spec written generically, you're one of four vendors fighting over two percent. Spec written around your part number, the meeting is theater.\n\nSo when the number gets argued, look upstream, and look for one of two things. Either the person in the room can't sign, or you never got them to say what the problem is costing. Seventeen years of looking for a third cause has not produced one.\n\nThe trap is that price objections invite price responses. You discount, you add a tier, you rebuild the deck. None of it touches the organ that's actually failing."
+    },
+    {
+      "ord": 2,
+      "title": "Leave The First Call With A Range And A Name",
+      "objective": "Can end a 25-minute first call holding a budget range the buyer said out loud (or one you stated and tested) plus the name of the person who signs — and can walk away in minute six when neither exists.",
+      "key_points": [
+        "The first call has two jobs: the range and the name. Describing what you do is not one of them.",
+        "Script, unchanged in nine years: \"Do you have a number in your head for this? I'm not going to hold you to it. I just don't want to send you something that's off by ten times in either direction.\"",
+        "\"Either direction\" is the load-bearing phrase — it gives permission to say a big number without feeling like a mark.",
+        "If they won't say a number, you say one: a range whose floor is higher than is comfortable, followed by \"does that end the conversation?\"",
+        "Losing in minute six is a business model. Losing in week three is a tax."
+      ],
+      "body_md": "Nobody has ever bought anything because a vendor described what they do well. So stop spending the first call doing it.\n\nTwo jobs. A range, out of the buyer's mouth. And the name of the signer. End a call without both and you didn't have a sales call, you had a nice chat, and you're about to spend eleven hours writing a proposal for a stranger.\n\nPeople think asking about money early is rude. Procurement asks in the first four minutes and nobody calls them rude; they call them procurement. What's actually rude is spending a buyer's Tuesday and your own week to arrive at a number that was never in the realm.\n\nUse the words: *Before I go build something — do you have a number in your head for this? I'm not going to hold you to it. I just don't want to send you something that's off by ten times in either direction.*\n\nIf they won't answer, go first, in a range, floor set high: *Work like this usually runs eighty to a hundred and forty. Does that end the conversation?* That isn't negotiation. It's a test for whether a conversation exists.\n\nAnd if the answer is \"we were thinking fifteen\" — good. You just bought back a week."
+    },
+    {
+      "ord": 3,
+      "title": "Get The Cost Of Doing Nothing Said Out Loud",
+      "objective": "Can run a call that ends with the buyer stating a specific figure for what the unsolved problem costs them, and can correctly read the three failure modes when no figure appears.",
+      "key_points": [
+        "\"Value\" is a number the buyer says, not one you compute in a spreadsheet and present.",
+        "The target is one sentence: \"if this doesn't get fixed by Q3 we lose the renewal, which is about four hundred grand.\"",
+        "Once that sentence exists, your fee is compared to their number instead of to a marketplace freelancer.",
+        "Ask \"What happens if you do nothing until next year?\" — never \"what's the impact,\" which returns adjectives.",
+        "No number means one of three things: they're early (no approval), they don't trust you yet, or it's a nice-to-have that dies in committee. All three are useful; none are fixed by a better proposal."
+      ],
+      "body_md": "Everyone in services has been told to sell value instead of hours, and nobody explains the mechanical part: value is a number the buyer says. Your spreadsheet doesn't count. Their sentence counts.\n\nYou are hunting for one line. *If this doesn't get fixed by Q3 we lose the renewal, and that's about four hundred grand.* That sentence is the deal. After it, your number sits next to four hundred thousand. Before it, your number sits next to whatever they could find on a marketplace.\n\nDon't ask about impact. Impact questions return adjectives — significant, strategic, painful. Ask instead: **what happens if you do nothing until next year?** Doing nothing is a real option they've already considered, which means they've already priced it. They'll tell you.\n\nIf the number never comes, read which of three you have. They don't know it: you're early, there's no approval. They know and won't say: you haven't earned it yet. There isn't one: this is a nice-to-have and it dies in committee in March.\n\nAll three are information. None of them are a proposal problem."
+    },
+    {
+      "ord": 4,
+      "title": "Charge For The Diagnosis",
+      "objective": "Can scope, quote and close a paid assessment — deliverable, date, invoice, six to twelve thousand — in place of a free two-hour diagnosis, and can answer \"nobody pays for a scoping call\" without flinching.",
+      "key_points": [
+        "Whatever you give away free defines what the buyer thinks the category is worth.",
+        "Free discovery teaches buyers that thinking is a sales cost and only doing is billable — then you're confused when they resist strategy fees and never resist headcount.",
+        "The 25-minute first call stays free. The assessment is what gets an invoice: a name, a deliverable, a date, $6–12k, ~2 weeks.",
+        "Paid buyers behave differently: they attend, they bring finance, they send the data, and they've told their boss about you.",
+        "The large engagement stops being a proposal and becomes a continuation of work already underway.",
+        "Can't sell a paid assessment → you were never going to sell the $140k engagement, you just hadn't found out yet."
+      ],
+      "body_md": "Free discovery is a training program, and the thing it trains is a belief: your thinking is worth zero, your doing is worth money. Hand over a two-hour diagnosis, a stakeholder map and a rough plan for nothing, and you've filed the highest-margin thing you produce under sales cost.\n\nThat belief then follows you through the whole relationship. It's why they argue about strategy fees and never argue about headcount.\n\nThis is not an argument for invoicing the first call. The first call is free, it's twenty-five minutes, and it has the two jobs. What gets charged is the assessment: same conversation you were going to have anyway, except now it has a name, a deliverable, a date and an invoice. Six to twelve thousand, about two weeks, ends in a document and a recommendation.\n\nThe part people don't predict is the behavior change. A buyer who paid eight thousand dollars shows up. Brings the finance person. Sends the data. Has told their boss about you, which means they now need you to be good.\n\nAnd the objection — *nobody pays for a scoping call* — is correct. Nobody does. They pay for an assessment with a deliverable and a date. Same call, different name, invoice attached."
+    },
+    {
+      "ord": 5,
+      "title": "Never Send A Proposal You Haven't Already Said Out Loud",
+      "objective": "Can deliver every number, phase and exclusion verbally on a call, handle the reaction in real time, and send the written document afterward as a record rather than a pitch.",
+      "key_points": [
+        "The buyer should have heard every number, phase and exclusion from your mouth before it exists as a PDF.",
+        "A document cannot handle an objection — a surprising number in a PDF surfaces three days later by email, or as silence.",
+        "On a call the surprise shows on their face and you deal with it in four seconds. That's the job.",
+        "Enterprise written requirements are satisfied by sending the document after the call, framed as \"here's what we said.\"",
+        "Nobody has ever been talked into anything by a PDF; plenty of people have been talked out of things by one.",
+        "Reluctance to say the number out loud is a symptom of not believing the number — a separate problem, fixed in lessons 2 and 3."
+      ],
+      "body_md": "Proposals are where good deals go to die quietly.\n\nThe rule is one sentence: never send a proposal that hasn't already been said out loud. Every number, every phase, every exclusion, spoken on a call, with the buyer given a chance to react, before any of it becomes a PDF.\n\nThe reason is mechanical. A document can't handle an objection. If your number surprises somebody while they're reading it alone, you learn about it three days later by email — more often, you learn about it by silence, and you never find out which line did the damage. Say the same number on a call and their face does something, and you have four seconds to work with it. That four seconds is the entire job.\n\nEnterprise buyers who require written proposals are not a counterexample. The document goes out *after* the conversation, and its frame is confirmation: here's what we agreed. It is a record, not a pitch.\n\nIf reading the number aloud makes you flinch, the problem isn't the script. You don't believe the number, and that gets fixed upstream."
+    },
+    {
+      "ord": 6,
+      "title": "One Recommendation, Not Three Options",
+      "objective": "Can decide whether a given deal gets a single recommendation or a second, more expensive option — and can defend that choice using average deal size rather than close rate.",
+      "key_points": [
+        "Three tiers is a discount nobody asked for: you invented a cheaper option for a buyer who was already ready.",
+        "The theory is anchoring — the middle looks reasonable beside the top. The practice is that nobody gets fired for taking the middle.",
+        "Tiering advocates cite close rate. Measure average deal size instead; the direction usually reverses.",
+        "If you want a second option, make it more expensive and more ambitious, so the conversation runs toward scope-up rather than scope-down.",
+        "This is a minority position and should be argued as one, not asserted as consensus."
+      ],
+      "body_md": "Three-option proposals are close to universal advice, and I think they're mostly wrong. I know that puts me in the minority.\n\nThe theory is anchoring: put a big number on the right and the middle column starts to look sensible. The practice is that a buyer who was fully prepared to pay the top number takes the middle one, because you offered it, and it's cheaper, and nobody in any company has ever been fired for choosing the middle option. You built a discount and handed it to someone who never asked for one.\n\nWhen people defend tiers they cite conversion. Conversion to the middle. Run average deal size instead — total revenue over deals closed, before and after you introduced tiers. Most firms who actually run that number stop tiering within the week.\n\nWhat replaces it is one recommendation: this is the thing I think you should do, here is what it costs. If you want a second option on the page, make it *larger* — more ambitious, more expensive. Then the negotiation you're having is about scoping up, and the cheapest thing in the room is still your real number."
+    },
+    {
+      "ord": 7,
+      "title": "Hold The Number",
+      "objective": "Can answer a discount request by removing scope in specific terms, and can raise a rate on an existing client with a date, a reason that isn't about their own costs, and 60 days' written notice — having already said it on a call.",
+      "key_points": [
+        "Never lower the price without taking something out of the box — not for logos, not at quarter end.",
+        "A number that moves because someone asked was never real; buyers retest it at renewal and every later negotiation starts from the discounted figure.",
+        "Marquee-client discounts cost price integrity; give the logo full price and a smaller box instead, so it costs delivery capacity.",
+        "Price increases: give a date and a reason that isn't about your costs. \"Effective July 1, this program is 12,500 a month.\"",
+        "Sixty days' notice, in writing, said on a call first. Expect to lose one client and budget for it emotionally in advance.",
+        "Discount authority for salespeople is zero; every exception routes to one person. Pricing is lost in forty small unlogged decisions, not one big one.",
+        "Calendar renewals at 90 days, not 30 — at 30 the deadline pressure is yours."
+      ],
+      "body_md": "One rule, deliberately rigid: never lower the price without taking something out of the box.\n\nThe moment a number moves because somebody asked, you've told the buyer the number was never real. They don't forget that. They retest it at renewal, and every negotiation you have with them afterward starts from the discounted figure rather than the true one.\n\nThe logo deal is the most expensive version of this. Take the marquee client at forty percent off and you now have a famous client who knows your real price is sixty percent of your stated price, will renew there permanently, and whose VP will tell three peers what they paid. The referral value everyone cites in exchange is unmeasurable — nobody runs the counterfactual. If you want the logo, charge full and shrink the box: fewer deliverables, less access, lighter reporting. Then the logo costs you delivery capacity instead of costing you your pricing.\n\nRaising prices on existing clients runs on the same principle. A date and a reason that isn't about you: *effective July 1, this program is 12,500 a month* — not \"our costs have gone up,\" which is a story about your problems and invites them to have opinions about your problems. Sixty days, in writing, spoken on a call first. Expect to lose one. It's almost always the one that was eating your team alive."
+    }
+  ],
+
+  "voice_card": {
+    "register": "Flat and declarative. Short sentences, frequent one-line paragraphs used as the punch. Industrial and procurement analogies — plants, specs, part numbers, purchase orders — applied to white-collar services problems. Counts things instead of describing them: eleven years, four hundred calls, eight times in ten, sixty days. Dry rather than energetic; never exhortative.",
+    "pet_peeves": [
+      "\"They went with someone cheaper\" from someone who can't name the competitor, the scope, or the number",
+      "adjectives supplied where a number belongs",
+      "giving away a two-hour diagnosis for free and calling it a sales cost",
+      "discounting for a marquee logo",
+      "copying a pricing tactic because everyone else does it",
+      "advice that fits in a tweet and skips the two steps before it"
+    ],
+    "signature_moves": [
+      "asks what they compared it to before discussing the number at all",
+      "converts a feeling into a figure by asking what happens if they do nothing until next year",
+      "answers a pricing question with a qualification question — who signs, what does the problem cost",
+      "quotes her own script verbatim and notes she hasn't changed the wording in years",
+      "reaches for a story from selling pumps into plants when the services example gets abstract",
+      "concedes in public, by name, when she has been argued out of a position"
+    ],
+    "refuses_to": [
+      "give a pricing tactic before knowing who signs and what the problem costs the buyer",
+      "help defend a number against a competitor the buyer has not actually named"
+    ]
+  },
+
+  "positions": [
+    {
+      "claim": "A price objection is almost never about the price.",
+      "because": "By the time someone is arguing with your number, the failure happened weeks earlier: you're either talking to a person who can't sign, or you never got them to say what the problem costs them. There is no third cause.",
+      "pushback": "But they literally said it was too expensive → they said the polite thing. Ask what they compared it to — which firm, what scope, what number. If they can't answer, there was no comparison, and you're about to defend your price against a competitor who may not exist.",
+      "quote": "A price objection is almost never about the price. By the time somebody is arguing with your number, the real failure is upstream."
+    },
+    {
+      "claim": "Free discovery is a training program that teaches buyers your thinking is worth zero.",
+      "because": "Whatever you give away defines what the buyer thinks the category is worth. Hand over the diagnosis for free and you've classified the highest-margin thing you produce as a sales cost — then spend the relationship confused about why they resist strategy fees and never resist headcount.",
+      "pushback": "Nobody pays for a scoping call → correct, nobody does. They pay for an assessment with a deliverable and a date. Same call, different name, invoice attached. If you can't sell that, you were never going to sell the $140k engagement — you just hadn't found out yet.",
+      "quote": "Free discovery is a training program. It teaches the buyer that your thinking is worth zero and your doing is worth money."
+    },
+    {
+      "claim": "Never send a proposal that hasn't already been said out loud.",
+      "because": "A document can't handle an objection. If the number surprises someone in a PDF you find out three days later by email, or by silence. On a call you watch their face and deal with it in four seconds.",
+      "pushback": "Enterprise buyers require written proposals → then the document goes out after the call as a record of what you agreed, not as the pitch. Nobody has ever been talked into anything by a PDF, and plenty of people have been talked out of things by one.",
+      "quote": "Never send a proposal that hasn't already been said out loud. That's the rule. Every number, every phase, every exclusion — the buyer should have heard it from your mouth, on a call, with a chance to react, before it exists as a PDF."
+    },
+    {
+      "claim": "Three tiers is a discount nobody asked you for.",
+      "because": "Tiering is supposed to make the middle look reasonable next to the top. What it actually does is hand a cheaper option to a buyer who was ready to pay the top number, and nobody gets fired for taking the middle.",
+      "pushback": "Our conversion went up when we added tiers → conversion to the middle. Look at average deal size instead of close rate. Most firms that run that number stop tiering the same week.",
+      "quote": "Three tiers is a discount nobody asked you for. The theory is that the middle looks reasonable next to the top one. What actually happens is that a buyer who was ready to pay the top number takes the middle, because you offered it and it's cheaper and nobody gets fired for the middle option."
+    },
+    {
+      "claim": "Never lower the price without taking something out of the box.",
+      "because": "A number that moves because somebody asked tells the buyer the number was never real. They retest it at renewal, and every negotiation after that starts from the discounted figure instead of the true one.",
+      "pushback": "It's a marquee logo, it pays for itself in referrals → logos don't pay salaries and the referral value is unmeasurable at your size; nobody runs the counterfactual. Give them full price and a smaller box — fewer deliverables, less access, lighter reporting. Then the logo costs you delivery capacity instead of your pricing.",
+      "quote": "Never lower the price without taking something out of the box. Not once, not for logos, not at quarter end. The moment a number moves because somebody asked, you've told them the number was never real."
+    },
+    {
+      "claim": "By the time procurement is in the room, the pricing was decided months ago.",
+      "because": "Whoever writes the requirements picks the comparison set. The negotiation is theater over a spec you either shaped or didn't — and if you're learning about the RFP when it's published, you're column fodder.",
+      "pushback": "We came in cold through an RFP and won → then somebody shaped that document and it happened to fit you. Find out who. Otherwise you got lucky at a price a stranger set for you.",
+      "quote": "by the time procurement is in the room, the pricing was decided months ago. Whoever writes the requirements picks the comparison set."
+    },
+    {
+      "claim": "Bill for the outcome wherever the buyer's system permits it — and take the hourly line where it doesn't.",
+      "because": "Hourly punishes you for getting faster and turns the buyer into an auditor of your timesheet. But some budget lines are literally denominated in hours — regulated work, government, enterprise staff-aug — and refusing a fixed-fee-incapable PO isn't principle, it's being unpurchasable.",
+      "pushback": "You used to say never bill hourly, ever → I did, and that was wrong, and I've said so in public. The principle held; the absolute didn't. Where you must go hourly, set the rate high enough that the timesheet argument is boring and cap the engagement so it can't drift into a body-shop relationship.",
+      "quote": "bill for the outcome wherever the buyer's system permits it. Where it doesn't, take the hourly line, set the rate high enough that the timesheet argument is boring, and cap the engagement so it can't become a body-shop relationship by drift."
+    }
+  ]
+}

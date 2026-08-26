@@ -1,6 +1,26 @@
 name: support-agent-template
 
 services:
+  # Journey 1 of the chat-native tutoring POC (docs/productDocs/POC_UserJourney.md).
+  # It serves its own /api/courses/* today and depends on nothing else in this
+  # stack; INGEST_MODE=live is the only setting that needs a model key.
+  web:
+    build:
+      context: .
+      dockerfile: services/web/Dockerfile
+    environment:
+      INGEST_MODE: ${INGEST_MODE:-mock}
+      INGEST_MOCK_DELAY_MS: ${INGEST_MOCK_DELAY_MS:-700}
+      MODEL_PROVIDER: ${MODEL_PROVIDER:-anthropic}
+      MODEL_NAME: ${MODEL_NAME:-claude-opus-5}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "3000:3000"
+    volumes:
+      - web_data:/app/.data
+    restart: unless-stopped
+
   gateway:
     build:
       context: .
@@ -141,3 +161,4 @@ volumes:
   temporal_data:
   chroma_data:
   redis_data:
+  web_data:

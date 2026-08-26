@@ -1,4 +1,5 @@
-.PHONY: install lint test test-unit test-e2e run seed ui down
+.PHONY: install lint test test-unit test-e2e run seed ui down \
+	web-install web-dev web-lint web-test web-test-e2e web-seed
 
 install:
 	uv sync --dev
@@ -33,3 +34,29 @@ ui:
 
 down:
 	docker compose down -v
+
+# ── services/web — the Journey 1 frontend ────────────────────────────────────
+# It runs standalone: no Temporal, no Chroma, no gateway. Ingestion defaults to
+# mock mode, which replays docs/productDocs/fixtures and needs no API key.
+
+web-install:
+	cd services/web && npm ci
+
+web-dev:
+	cd services/web && npm run dev
+
+web-lint:
+	cd services/web && npm run lint && npm run typecheck
+
+web-test:
+	cd services/web && npm run test
+
+# Builds the app and drives Journey 1 in a real browser. Needs the Playwright
+# browser once: cd services/web && npx playwright install chromium
+web-test-e2e:
+	cd services/web && npm run test:e2e
+
+# Puts the reference course in the studio. Opt-in: an empty studio is a
+# designed screen.
+web-seed:
+	cd services/web && npm run seed

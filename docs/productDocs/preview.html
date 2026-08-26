@@ -1,0 +1,557 @@
+<title>Riso Poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+
+<style>
+:root{
+  --ink:#000; --ink-muted:#5C5C5C; --ink-faint:#A3A3A3;
+  --pink:#F2A0E7; --pink-deep:#D466C4; --pink-wash:#FBE0F6;
+  --paper:#fff; --paper-tint:#FDF4FB; --surround:#F2A0E7; --alert:#CC2318;
+  --bd-hair:1.5px; --bd:2px; --bd-heavy:3px;
+  --lift:4px 4px 0 0 var(--ink); --lift-lg:8px 8px 0 0 var(--ink);
+  --fd:'Archivo',system-ui,sans-serif;
+  --fs:'Newsreader',Georgia,serif;
+  --fm:'DM Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0; background:var(--surround); color:var(--ink);
+  font-family:var(--fd); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+img,svg{max-width:100%}
+
+/* ── frame ────────────────────────────────────────── */
+.sheet{
+  max-width:1440px; margin:32px auto; background:var(--paper);
+  border:var(--bd-heavy) solid var(--ink);
+}
+.rail{
+  height:28px; border-bottom:var(--bd-heavy) solid var(--ink);
+  background-repeat:repeat-x; background-size:24px 24px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M2 22V6h16v12H8v-8h6' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E");
+}
+.nav{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:12px 24px; border-bottom:var(--bd-heavy) solid var(--ink);
+  background-image:radial-gradient(rgba(0,0,0,.30) 1px,transparent 1.3px);
+  background-size:6px 6px;
+}
+.nav-in{background:var(--paper); padding:4px 10px; border:var(--bd) solid var(--ink)}
+.dots{display:flex; gap:8px}
+.dots i{width:12px;height:12px;border-radius:50%;background:var(--ink);display:block}
+.inner{padding:48px 40px 64px; max-width:1200px; margin:0 auto}
+
+/* ── ticker ───────────────────────────────────────── */
+.ticker{
+  height:44px; background:var(--ink); color:var(--pink); overflow:hidden;
+  display:flex; align-items:center; border-top:var(--bd-heavy) solid var(--ink);
+}
+.ticker span{
+  white-space:nowrap; font:600 13px/1 var(--fd); letter-spacing:.08em;
+  text-transform:uppercase; padding-right:40px;
+  animation:slide 40s linear infinite;
+}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+/* ── type ─────────────────────────────────────────── */
+.dxl{font:800 64px/.94 var(--fd); font-stretch:110%; letter-spacing:-.02em; text-transform:uppercase; margin:0; text-wrap:balance}
+.dl {font:800 44px/1 var(--fd); letter-spacing:-.02em; text-transform:uppercase; margin:0; text-wrap:balance}
+.dm {font:800 32px/1.06 var(--fd); letter-spacing:-.01em; text-transform:uppercase; margin:0}
+.ttl{font:700 22px/1.27 var(--fd); margin:0}
+.bl {font:400 19px/1.68 var(--fs); margin:0; max-width:68ch}
+.bd {font:400 16px/1.63 var(--fd); margin:0; max-width:72ch}
+.bs {font:400 14px/1.57 var(--fd); margin:0}
+.lb {font:600 13px/1.23 var(--fd); letter-spacing:.08em; text-transform:uppercase}
+.mt {font:400 12px/1.33 var(--fm); letter-spacing:.06em; text-transform:uppercase; font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-muted)}
+.hl{background:var(--pink); box-decoration-break:clone; -webkit-box-decoration-break:clone; padding:0 .18em}
+
+/* ── patterns ─────────────────────────────────────── */
+.pat-halftone{background-image:radial-gradient(rgba(0,0,0,.30) 1px,transparent 1.3px); background-size:6px 6px}
+.pat-hatch{background-image:repeating-linear-gradient(45deg,var(--ink) 0 2px,transparent 2px 8px)}
+.pat-meander{height:28px; background-repeat:repeat-x; background-size:24px 24px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M2 22V6h16v12H8v-8h6' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E")}
+
+/* ── layout helpers ───────────────────────────────── */
+section{margin-top:80px}
+.sec-head{display:flex; align-items:baseline; gap:16px; border-bottom:var(--bd-heavy) solid var(--ink); padding-bottom:10px; margin-bottom:28px}
+.sec-head .mt{color:var(--ink-muted)}
+.grid{display:grid; gap:24px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.row{display:flex; flex-wrap:wrap; gap:16px; align-items:center}
+.stack{display:flex; flex-direction:column; gap:12px}
+.card{border:var(--bd) solid var(--ink); background:var(--paper); padding:20px}
+.note{border-left:var(--bd-heavy) solid var(--pink); padding-left:14px}
+
+/* ── buttons ──────────────────────────────────────── */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  height:44px; padding:0 24px; border-radius:999px;
+  border:var(--bd) solid var(--ink); background:var(--paper); color:var(--ink);
+  font:600 13px/1 var(--fd); letter-spacing:.08em; text-transform:uppercase;
+  cursor:pointer; transition:transform 90ms steps(3);
+}
+.btn:hover{transform:translate(-2px,-2px); box-shadow:var(--lift)}
+.btn:active{transform:translate(0,0); box-shadow:none}
+.btn:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
+.btn--primary{background:var(--ink); color:var(--paper)}
+.btn--accent{background:var(--pink)}
+.btn--accent:active{background:var(--pink-deep)}
+.btn--secondary:hover{background:var(--pink)}
+.btn--ghost{border-color:transparent; background:transparent; padding:0 8px}
+.btn--ghost:hover{background:var(--pink); box-shadow:none; transform:none}
+.btn--destructive{color:var(--alert); border-color:var(--alert)}
+.btn--destructive:hover{background:var(--alert); color:var(--paper)}
+.btn[disabled]{color:var(--ink-faint); border-color:var(--ink-faint); background:var(--paper); pointer-events:none}
+.btn--sm{height:34px; padding:0 16px; font-size:12px}
+.btn--lg{height:56px; padding:0 36px; font-size:15px}
+
+/* ── swatches ─────────────────────────────────────── */
+.sw{border:var(--bd) solid var(--ink)}
+.sw .chip{height:80px; border-bottom:var(--bd) solid var(--ink)}
+.sw .meta{padding:10px 12px; display:flex; flex-direction:column; gap:2px}
+table{border-collapse:collapse; width:100%; font-size:14px}
+th,td{border:var(--bd-hair) solid var(--ink); padding:8px 12px; text-align:left; font-variant-numeric:tabular-nums}
+th{font:600 12px/1.3 var(--fd); letter-spacing:.08em; text-transform:uppercase; background:var(--paper-tint)}
+.tw{overflow-x:auto}
+.pass{font-family:var(--fm); font-size:12px}
+.fail{font-family:var(--fm); font-size:12px; color:var(--alert); font-weight:500}
+
+/* ── avatar ───────────────────────────────────────── */
+.av{
+  width:64px;height:64px;border-radius:50%;border:var(--bd-heavy) solid var(--ink);
+  background:var(--pink); display:grid; place-items:center; flex:none;
+  font:800 20px/1 var(--fd); letter-spacing:.02em;
+}
+.av--sm{width:32px;height:32px;font-size:12px;border-width:2px}
+
+/* ── course card ──────────────────────────────────── */
+.course{border:var(--bd) solid var(--ink); background:var(--paper); padding:24px; display:flex; flex-direction:column; gap:14px; transition:transform 120ms steps(3)}
+.course:hover{transform:translate(-3px,-3px); box-shadow:var(--lift)}
+.quote{border-left:var(--bd-heavy) solid var(--pink); padding-left:12px; font:italic 400 17px/1.5 var(--fs)}
+.price{align-self:flex-start; background:var(--pink); border:var(--bd) solid var(--ink); padding:5px 12px}
+
+/* ── position card ────────────────────────────────── */
+.pos{border:var(--bd-heavy) solid var(--ink); background:var(--paper); padding:22px; display:flex; flex-direction:column; gap:8px}
+.pos .zone{color:var(--ink-muted); margin-top:10px}
+.pos .zone:first-of-type{margin-top:0}
+.push{background:var(--pink-wash); border:var(--bd-hair) solid var(--ink); padding:12px 14px; font:italic 400 18px/1.55 var(--fs)}
+.locked{height:112px; border:var(--bd-hair) solid var(--ink-faint); display:grid; place-items:center}
+.lockpill{background:var(--ink); color:var(--paper); border-radius:999px; padding:8px 18px}
+
+/* ── chat ─────────────────────────────────────────── */
+.thread{display:flex; flex-direction:column; gap:32px; max-width:68ch}
+.turn-spec{display:flex; gap:14px}
+.turn-spec .body{display:flex; flex-direction:column; gap:8px}
+.turn-seek{align-self:flex-end; max-width:44ch; border:var(--bd) solid var(--ink); background:var(--paper-tint); padding:12px 16px}
+.cite{
+  display:inline-flex; align-items:center; gap:6px; border:var(--bd-hair) solid var(--ink);
+  border-radius:999px; padding:5px 12px; background:var(--paper); cursor:pointer;
+  font:400 12px/1 var(--fm); letter-spacing:.06em; text-transform:uppercase;
+}
+.cite:hover{background:var(--pink)}
+.cite:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
+.cite-body{border-left:var(--bd-heavy) solid var(--ink); background:var(--pink-wash); padding:14px 16px; font:italic 400 18px/1.55 var(--fs); margin-top:10px}
+.caret{display:inline-block;width:.55em;height:1.05em;background:var(--pink);vertical-align:-.15em;animation:caret 1s steps(2,start) infinite}
+@keyframes caret{50%{opacity:0}}
+
+/* ── syllabus rail ────────────────────────────────── */
+.railbox{border:var(--bd) solid var(--ink); background:var(--paper-tint); padding:20px; width:280px; flex:none}
+.les{display:flex; align-items:center; gap:12px; padding:7px 0}
+.les .bd{font-size:15px; line-height:1.4}
+.num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;font:500 10px/1 var(--fm); letter-spacing:0}
+.num--passed{background:var(--ink); color:var(--paper); border:2px solid var(--ink)}
+.num--active{background:var(--pink); border:2px solid var(--ink)}
+.num--locked{background:var(--paper); border:2px solid var(--ink-faint); color:var(--ink-faint)}
+.les--locked{color:var(--ink-faint)}
+.les--active{font-weight:700}
+.meter{display:flex; border:var(--bd) solid var(--ink); height:22px}
+.meter i{flex:1; border-right:var(--bd-hair) solid var(--ink); display:block}
+.meter i:last-child{border-right:0}
+.meter i.on{background:var(--pink)}
+
+/* ── forms ────────────────────────────────────────── */
+.field{display:flex; flex-direction:column; gap:6px}
+input.t,textarea.t{
+  border:var(--bd) solid var(--ink); border-radius:0; background:var(--paper);
+  padding:12px 16px; font:400 16px/1.5 var(--fd); color:var(--ink); width:100%;
+}
+input.t::placeholder,textarea.t::placeholder{color:var(--ink-muted)}
+input.t:focus-visible,textarea.t:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
+.invalid{border-color:var(--alert)}
+.invalid-wrap{position:relative; padding-left:10px}
+.invalid-wrap::before{content:''; position:absolute; left:0; top:0; bottom:0; width:6px;
+  background-image:repeating-linear-gradient(45deg,var(--alert) 0 2px,transparent 2px 8px)}
+.drop{border:var(--bd-heavy) dashed var(--ink); padding:44px 24px; text-align:center; display:flex; flex-direction:column; gap:10px; align-items:center}
+
+/* ── tabs ─────────────────────────────────────────── */
+.tabs{display:flex; gap:6px; border-bottom:var(--bd-heavy) solid var(--ink); margin-bottom:-2px}
+.tab{border:var(--bd) solid var(--ink); border-bottom:0; background:var(--paper); color:var(--ink-muted);
+  padding:10px 20px; font:600 13px/1 var(--fd); letter-spacing:.08em; text-transform:uppercase; cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink); color:var(--paper)}
+
+/* ── paywall ──────────────────────────────────────── */
+.wall{background:var(--ink); color:var(--paper); padding:0 0 28px; max-width:68ch}
+.wall .strip{background:var(--ink); color:var(--pink); padding:14px 24px; border-bottom:2px solid var(--pink)}
+.wall .in{padding:22px 24px 0; display:flex; flex-direction:column; gap:18px}
+.wall p{font:400 19px/1.6 var(--fs); margin:0}
+
+/* ── empty ────────────────────────────────────────── */
+.empty{border:var(--bd) solid var(--ink); padding:44px; display:grid; place-items:center}
+.empty .box{background:var(--paper); border:var(--bd) solid var(--ink); padding:22px 26px; display:flex; flex-direction:column; gap:14px; align-items:flex-start}
+
+@media (max-width:1100px){
+  .g3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dxl{font-size:48px}
+}
+@media (max-width:820px){
+  .sheet{margin:16px}
+  .inner{padding:32px 20px 48px}
+  .g2,.g3{grid-template-columns:minmax(0,1fr)}
+  .dxl{font-size:38px} .dl{font-size:32px} .dm{font-size:24px}
+  .railbox{width:auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important; transition:none !important}
+  .caret{opacity:1}
+}
+</style>
+
+<div class="sheet">
+  <div class="rail"></div>
+  <div class="nav">
+    <div class="dots"><i></i><i></i><i></i></div>
+    <div class="lb nav-in">Knowledge Access Platform · Design System</div>
+    <div class="mt nav-in">v1 · Riso Poster</div>
+  </div>
+
+  <div class="inner">
+
+    <!-- HERO -->
+    <header>
+      <p class="mt muted" style="margin:0 0 18px">DESIGN.md — living preview</p>
+      <h1 class="dxl">Two inks.<br><span class="hl">One opinion.</span></h1>
+      <p class="bl" style="margin-top:22px">Every component in the platform, rendered in its own language. Black, one pink, and paper — plus four patterns that stand in for every value between. If something here can't be built from these rules, it doesn't belong in the product.</p>
+      <div class="row" style="margin-top:26px">
+        <a class="btn btn--accent btn--lg" href="#components">See the components</a>
+        <span class="mt muted">9 sections · 15 components</span>
+      </div>
+    </header>
+
+    <!-- PALETTE -->
+    <section id="palette">
+      <div class="sec-head"><h2 class="dm">Palette</h2><span class="mt">§2 · three inks, one escape hatch</span></div>
+
+      <div class="grid g3">
+        <div class="sw"><div class="chip" style="background:#000"></div><div class="meta"><span class="lb">Ink</span><span class="mt muted">#000000 · every border &amp; every word</span></div></div>
+        <div class="sw"><div class="chip" style="background:#F2A0E7"></div><div class="meta"><span class="lb">Pink</span><span class="mt muted">#F2A0E7 · surface only, never text</span></div></div>
+        <div class="sw"><div class="chip" style="background:#fff"></div><div class="meta"><span class="lb">Paper</span><span class="mt muted">#FFFFFF · the sheet</span></div></div>
+        <div class="sw"><div class="chip" style="background:#FDF4FB"></div><div class="meta"><span class="lb">Paper tint</span><span class="mt muted">#FDF4FB · rails, seeker turns</span></div></div>
+        <div class="sw"><div class="chip" style="background:#FBE0F6"></div><div class="meta"><span class="lb">Pink wash</span><span class="mt muted">#FBE0F6 · holds small black text</span></div></div>
+        <div class="sw"><div class="chip" style="background:#D466C4"></div><div class="meta"><span class="lb">Pink deep</span><span class="mt muted">#D466C4 · pressed state only</span></div></div>
+        <div class="sw"><div class="chip" style="background:#5C5C5C"></div><div class="meta"><span class="lb">Ink muted</span><span class="mt muted">#5C5C5C · secondary text on paper</span></div></div>
+        <div class="sw"><div class="chip" style="background:#A3A3A3"></div><div class="meta"><span class="lb">Ink faint</span><span class="mt muted">#A3A3A3 · disabled &amp; decoration</span></div></div>
+        <div class="sw"><div class="chip" style="background:#CC2318"></div><div class="meta"><span class="lb">Alert</span><span class="mt muted">#CC2318 · destructive &amp; invalid only</span></div></div>
+      </div>
+
+      <div class="note" style="margin-top:32px">
+        <p class="ttl" style="margin-bottom:6px">Pink is a surface, never an ink.</p>
+        <p class="bd muted">#F2A0E7 on white is 1.92:1. It fails every standard and it looks cheap. The inverse — pink on black — is 10.96:1 and is a signature move.</p>
+      </div>
+
+      <div class="tw" style="margin-top:28px">
+        <table>
+          <thead><tr><th>Foreground</th><th>Background</th><th>Ratio</th><th>Verdict</th></tr></thead>
+          <tbody>
+            <tr><td>Ink</td><td>Paper</td><td class="pass">21.00</td><td class="pass">AAA</td></tr>
+            <tr><td>Ink</td><td>Pink</td><td class="pass">10.96</td><td class="pass">AAA — default pairing on pink</td></tr>
+            <tr><td>Pink</td><td>Ink</td><td class="pass">10.96</td><td class="pass">AAA — pink-on-black is legal</td></tr>
+            <tr><td>Ink</td><td>Pink wash</td><td class="pass">17.09</td><td class="pass">AAA</td></tr>
+            <tr><td>Ink muted</td><td>Paper</td><td class="pass">6.69</td><td class="pass">AA all sizes</td></tr>
+            <tr><td>Ink muted</td><td>Pink</td><td class="fail">3.49</td><td class="fail">Forbidden — use full ink</td></tr>
+            <tr><td>Pink</td><td>Paper</td><td class="fail">1.92</td><td class="fail">Never text</td></tr>
+            <tr><td>Pink deep</td><td>Paper</td><td class="fail">3.23</td><td class="fail">UI boundaries only</td></tr>
+            <tr><td>Alert</td><td>Paper</td><td class="pass">5.50</td><td class="pass">AA</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TYPE -->
+    <section id="type">
+      <div class="sec-head"><h2 class="dm">Typography</h2><span class="mt">§3 · Archivo · Newsreader · DM Mono</span></div>
+      <p class="bd muted" style="margin-bottom:28px">The split is semantic. The Specialist's words are set in serif; the application's own voice is set in grotesk. A student should be able to tell, without reading, which sentences they paid for.</p>
+
+      <div class="stack" style="gap:26px">
+        <div><span class="mt muted">display-xl · Archivo 800 · 64/60 · caps · ≤4 words</span><p class="dxl" style="margin-top:8px">Charge more</p></div>
+        <div><span class="mt muted">display-l · 44/44 · caps · page titles</span><p class="dl" style="margin-top:8px">What I'll argue about</p></div>
+        <div><span class="mt muted">display-m · 32/34 · caps · section heads</span><p class="dm" style="margin-top:8px">Where students get stuck</p></div>
+        <div><span class="mt muted">title · Archivo 700 · 22/28 · sentence case</span><p class="ttl" style="margin-top:8px">Pricing for B2B SaaS</p></div>
+        <div><span class="mt muted">body-l · Newsreader 400 · 19/32 · the reading size · 68ch</span><p class="bl" style="margin-top:8px">Persuasion is a tax you pay for a weak offer. Fix the offer and the selling gets easy — which is why I won't give you a single closing tactic until I know what you charge and how many people said no last week.</p></div>
+        <div><span class="mt muted">body · Archivo 400 · 16/26 · UI copy</span><p class="bd" style="margin-top:8px">Drop your material here. Markdown, plain text, or a PDF with a real text layer.</p></div>
+        <div><span class="mt muted">label · Archivo 600 · 13/16 · +0.08em · caps</span><p class="lb" style="margin-top:8px">Get access</p></div>
+        <div><span class="mt muted">meta · DM Mono 400 · 12/16 · caps · tabular</span><p class="mt" style="margin-top:8px">Lesson III of VII · 30% · $299 · 2 of 5 left</p></div>
+      </div>
+    </section>
+
+    <!-- PATTERNS -->
+    <section id="patterns">
+      <div class="sec-head"><h2 class="dm">Patterns</h2><span class="mt">§10 · the third value, without a third colour</span></div>
+      <div class="grid g3">
+        <div class="card" style="padding:0">
+          <div class="pat-halftone" style="height:120px;border-bottom:2px solid #000"></div>
+          <div style="padding:14px 16px"><p class="lb">Halftone</p><p class="bs muted" style="margin-top:4px">Absent · locked · loading. Replaces every spinner and skeleton shimmer.</p></div>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="pat-hatch" style="height:120px;border-bottom:2px solid #000"></div>
+          <div style="padding:14px 16px"><p class="lb">Hatch</p><p class="bs muted" style="margin-top:4px">Invalid · disabled · draft. Carries warning without introducing amber.</p></div>
+        </div>
+        <div class="card" style="padding:0">
+          <div style="height:120px;border-bottom:2px solid #000;display:grid;place-items:center">
+            <div class="pat-meander" style="width:100%"></div>
+          </div>
+          <div style="padding:14px 16px"><p class="lb">Meander</p><p class="bs muted" style="margin-top:4px">The frame's top rail, and dividers that need ceremony.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUTTONS -->
+    <section id="components">
+      <div class="sec-head"><h2 class="dm">Buttons</h2><span class="mt">§4.1 · hover lifts, press slams — 90ms steps(3)</span></div>
+      <div class="row" style="gap:14px">
+        <button class="btn btn--primary">Get access</button>
+        <button class="btn btn--accent">Build my course</button>
+        <button class="btn btn--secondary">Preview</button>
+        <button class="btn btn--ghost">Skip ahead</button>
+        <button class="btn btn--destructive">Delete stance</button>
+        <button class="btn" disabled>Publish</button>
+      </div>
+      <div class="row" style="gap:14px;margin-top:22px">
+        <button class="btn btn--secondary btn--sm">Soften</button>
+        <button class="btn btn--secondary">Keep</button>
+        <button class="btn btn--accent btn--lg">Pay $299</button>
+        <span class="mt muted">sm 34 · md 44 (tablet floor) · lg 56</span>
+      </div>
+    </section>
+
+    <!-- CARDS -->
+    <section>
+      <div class="sec-head"><h2 class="dm">Course card</h2><span class="mt">§4.3 · catalog, 3-up</span></div>
+      <div class="grid g3">
+        <article class="course">
+          <div class="av">RM</div>
+          <div><p class="lb">Rahul Mehta</p><p class="ttl" style="margin-top:4px">Pricing for B2B SaaS</p><p class="bs muted" style="margin-top:6px">Stop guessing. Charge more than feels comfortable.</p></div>
+          <p class="quote">“If you have to sell hard, your offer is broken.”</p>
+          <span class="mt price">$299</span>
+        </article>
+        <article class="course">
+          <div class="av">JO</div>
+          <div><p class="lb">Junko Ohara</p><p class="ttl" style="margin-top:4px">Shipping under constraint</p><p class="bs muted" style="margin-top:6px">Scope is the only lever you actually control.</p></div>
+          <p class="quote">“A deadline you can move isn't a deadline.”</p>
+          <span class="mt price">$149</span>
+        </article>
+        <article class="course">
+          <div class="av">DA</div>
+          <div><p class="lb">Dele Amadi</p><p class="ttl" style="margin-top:4px">Hiring your first ten</p><p class="bs muted" style="margin-top:6px">Most founders hire to feel less alone. Don't.</p></div>
+          <p class="quote">“Culture fit is a word people use when they can't name the trait.”</p>
+          <span class="mt price">$399</span>
+        </article>
+      </div>
+    </section>
+
+    <!-- POSITION -->
+    <section>
+      <div class="sec-head"><h2 class="dm">Position card</h2><span class="mt">§4.5 · the paid asset — open &amp; locked</span></div>
+      <div class="grid g2">
+        <article class="pos">
+          <p class="mt zone">Claim</p>
+          <p class="ttl"><span class="hl">If you have to sell hard, your offer is broken.</span></p>
+          <p class="mt zone">Because</p>
+          <p class="bl">Persuasion is a tax you pay for a weak offer. Fix the offer and the selling gets easy.</p>
+          <p class="mt zone">When they push back</p>
+          <p class="push">“My closing rate is fine” → then you're leaving price on the table, not proving the offer works.</p>
+        </article>
+        <article class="pos">
+          <p class="mt zone">Claim</p>
+          <p class="ttl"><span class="hl">Lowering price is the most expensive decision you'll make.</span></p>
+          <p class="mt zone">Because</p>
+          <div class="locked pat-halftone"><span class="lb lockpill">Unlock</span></div>
+          <p class="bs muted" style="margin-top:12px">Locked cards never receive <code style="font-family:var(--fm);font-size:13px">because</code> or <code style="font-family:var(--fm);font-size:13px">pushback</code> from the API. Do not render and blur — that's one devtools inspection from giving the product away.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section>
+      <div class="sec-head"><h2 class="dm">Chat thread</h2><span class="mt">§4.6 · asymmetric by design</span></div>
+      <p class="bd muted" style="margin-bottom:28px">The Specialist is publishing; the Seeker is interjecting. His words get the page — serif, full column, no box. Hers get a box.</p>
+
+      <div class="thread">
+        <div class="turn-spec">
+          <div class="av av--sm">RM</div>
+          <div class="body">
+            <p class="mt muted">Rahul</p>
+            <p class="bl">Before I start — what's the thing you're actually trying to do? And what have you already tried that didn't work?</p>
+          </div>
+        </div>
+
+        <div class="turn-seek">
+          <p class="bd">I charge $2k and close about 1 in 10. I've tried dropping to $1.5k and it didn't move anything.</p>
+        </div>
+
+        <div class="turn-spec">
+          <div class="av av--sm">RM</div>
+          <div class="body">
+            <p class="mt muted">Rahul</p>
+            <p class="bl">Good — that's the answer I wanted. You already ran the discount experiment and the close rate didn't move, which means price was never the objection. Something earlier in the offer is broken, and we're going to find it before you touch your pricing page again<span class="caret"></span></p>
+            <div>
+              <button class="cite" type="button" aria-expanded="true">▾ From Lesson II</button>
+              <div class="cite-body">A price cut that doesn't move conversion is the cleanest signal you'll ever get: the buyer isn't hesitating over the number.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:36px;max-width:68ch">
+        <p class="mt muted" style="margin-bottom:10px">Composer · §4.10</p>
+        <div style="border:3px solid #000;padding:12px 14px;display:flex;gap:12px;align-items:flex-end">
+          <textarea class="t" rows="2" style="border:0;padding:0;resize:none" placeholder="Tell him what you actually charge…"></textarea>
+          <div class="row" style="gap:8px;flex:none">
+            <button class="btn btn--secondary btn--sm">Skip ahead</button>
+            <button class="btn btn--secondary btn--sm">I'm lost</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RAIL -->
+    <section>
+      <div class="sec-head"><h2 class="dm">Syllabus rail</h2><span class="mt">§4.8 &amp; §4.9 · roman numerals, discrete progress</span></div>
+      <div class="row" style="gap:32px;align-items:flex-start">
+        <div class="railbox">
+          <p class="mt muted" style="margin-bottom:14px">Reordered for you · 2 skipped</p>
+          <div class="les"><span class="num num--passed">✓</span><span class="bd">Framing the problem</span></div>
+          <div class="les"><span class="num num--passed">✓</span><span class="bd">Sizing the market</span></div>
+          <div class="les les--active"><span class="num num--active">III</span><span class="bd">Stop competing on price</span></div>
+          <div class="les les--locked"><span class="num num--locked">IV</span><span class="bd">The value equation</span></div>
+          <div class="les les--locked"><span class="num num--locked">V</span><span class="bd">Guarantees that aren't suicide</span></div>
+          <div class="les les--locked" style="opacity:.55"><span class="num num--locked pat-hatch">VI</span><span class="bd">Scarcity and urgency</span></div>
+          <div class="les les--locked"><span class="num num--locked">VII</span><span class="bd">Price it higher than feels safe</span></div>
+
+          <div style="margin-top:22px;display:flex;justify-content:space-between;align-items:baseline">
+            <span class="mt">Progress</span><span class="mt">30%</span>
+          </div>
+          <div class="meter" style="margin-top:8px">
+            <i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <button class="btn btn--secondary" style="width:100%;margin-top:20px">Ask Rahul</button>
+        </div>
+
+        <div class="stack" style="flex:1;min-width:280px;gap:18px">
+          <div class="note">
+            <p class="ttl" style="margin-bottom:6px">The reorder moment</p>
+            <p class="bd muted">After the opening diagnostic, rows translate to their new position in <code style="font-family:var(--fm);font-size:13px">160ms steps(4)</code>, staggered 60ms. Skipped lessons take the hatch treatment and drop to faint ink. This is the entire argument against video — it has to be seen.</p>
+          </div>
+          <div class="note">
+            <p class="ttl" style="margin-bottom:6px">Why blocks, not a bar</p>
+            <p class="bd muted">One cell per lesson, filled in a single <code style="font-family:var(--fm);font-size:13px">steps(1)</code> snap. A snap reads as an achievement; a smooth fill reads as loading.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FORMS + TABS -->
+    <section>
+      <div class="sec-head"><h2 class="dm">Forms &amp; tabs</h2><span class="mt">§4.10 &amp; §4.11 · black focus ring, file-folder tabs</span></div>
+      <div class="grid g2">
+        <div class="stack" style="gap:20px">
+          <div class="field">
+            <label class="lb" for="f1">Course title</label>
+            <input class="t" id="f1" value="Pricing for B2B SaaS">
+          </div>
+          <div class="field">
+            <label class="lb" for="f2">What are you trying to do in the next 30 days?</label>
+            <textarea class="t" id="f2" rows="3">You said you charge $2k and close about 1 in 10.</textarea>
+            <span class="bs muted">He'll open with this.</span>
+          </div>
+          <div class="field invalid-wrap">
+            <label class="lb" for="f3">Price</label>
+            <input class="t invalid" id="f3" value="free" aria-invalid="true">
+            <span class="bs" style="color:var(--alert)">Enter a number in dollars. Free courses can't be published yet.</span>
+          </div>
+        </div>
+
+        <div class="stack" style="gap:24px">
+          <div>
+            <div class="tabs" role="tablist">
+              <button class="tab" role="tab" aria-selected="true">Positions</button>
+              <button class="tab" role="tab" aria-selected="false">Syllabus</button>
+              <button class="tab" role="tab" aria-selected="false">Voice</button>
+            </div>
+            <div class="card" style="border-top:3px solid #000;padding:22px">
+              <p class="bd">We found 6 things you believe that most people don't. Your students are paying for these.</p>
+            </div>
+          </div>
+
+          <div class="drop pat-halftone">
+            <div style="background:var(--paper);border:2px solid var(--ink);padding:20px 24px;display:flex;flex-direction:column;gap:10px;align-items:center">
+              <p class="ttl">Drop your material here.</p>
+              <p class="bs muted">Markdown, plain text, or a PDF with a real text layer.</p>
+              <button class="btn btn--primary" style="margin-top:4px">Choose files</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAYWALL + EMPTY -->
+    <section>
+      <div class="sec-head"><h2 class="dm">The wall &amp; the empty state</h2><span class="mt">§4.12 &amp; §4.14</span></div>
+      <div class="grid g2" style="align-items:start">
+        <div class="wall">
+          <div class="strip lb">✕✕ You're 5 messages in ✕✕</div>
+          <div class="in">
+            <p>He's already found your constraint. There are 7 lessons and he'll keep asking until you can defend your number out loud.</p>
+            <button class="btn btn--accent btn--lg" style="align-self:flex-start">Get access — $299</button>
+          </div>
+        </div>
+
+        <div class="empty pat-halftone">
+          <div class="box">
+            <p class="ttl">No courses yet. Make one.</p>
+            <button class="btn btn--accent">Build a course</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DON'TS -->
+    <section>
+      <div class="sec-head"><h2 class="dm">Don't</h2><span class="mt">§7 · the fast ways to break this</span></div>
+      <div class="grid g2">
+        <ul class="stack" style="list-style:none;padding:0;margin:0;gap:10px">
+          <li class="bd">✕ Pink text on white. Ever. (1.92:1)</li>
+          <li class="bd">✕ Blurred shadows, gradients, glass, or glow.</li>
+          <li class="bd">✕ Any container radius between 1px and 998px.</li>
+          <li class="bd">✕ A third hue — not for charts, not for one badge.</li>
+          <li class="bd">✕ Uppercase runs over eight words.</li>
+        </ul>
+        <ul class="stack" style="list-style:none;padding:0;margin:0;gap:10px">
+          <li class="bd">✕ Symmetric chat bubbles.</li>
+          <li class="bd">✕ CSS-blurring locked content instead of withholding it.</li>
+          <li class="bd">✕ Easing curves. Motion here is stepped.</li>
+          <li class="bd">✕ Spinners and shimmer skeletons — use halftone.</li>
+          <li class="bd">✕ Softening the chrome to make <code style="font-family:var(--fm);font-size:14px">/learn</code> comfortable. Fix the text column instead.</li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="ticker">
+    <span>✕✕ Knowledge from people who argue back ✕✕ Two inks and paper ✕✕ Pink is a surface, never an ink ✕✕ The wall lands mid-thought ✕✕ Knowledge from people who argue back ✕✕ Two inks and paper ✕✕ Pink is a surface, never an ink ✕✕ The wall lands mid-thought ✕✕&nbsp;</span>
+  </div>
+</div>

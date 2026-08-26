@@ -38,10 +38,32 @@ jobs:
       - run: go vet ./...
       - run: go test -race ./...
 
-  containers:
+  web:
     runs-on: ubuntu-latest
-    needs: [python, go]
+    defaults:
+      run:
+        working-directory: services/web
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose build gateway worker mcp-tools
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: services/web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      # Includes the fixture's quote-anchor assertion (A2) and the check that
+      # the public course projection withholds the argument.
+      - run: npm run test
+      - run: npx playwright install --with-deps chromium
+      # Journey 1 in a real browser, against INGEST_MODE=mock — deterministic
+      # and no model key required.
+      - run: npm run test:e2e
 
+  containers:
+    runs-on: ubuntu-latest
+    needs: [python, go, web]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build gateway worker mcp-tools web

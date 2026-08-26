@@ -1,0 +1,26 @@
+# Every image builds from the repository root, so this list keeps local build
+# artefacts and secrets out of all of them.
+
+.git
+.github
+.env
+.env.*
+!.env.example
+
+# Python
+.venv
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.coverage
+
+# Node / services/web
+**/node_modules
+services/web/.next
+services/web/.data
+services/web/.data-e2e
+services/web/test-results
+services/web/playwright-report
+
+# Editor and OS noise
+**/.DS_Store

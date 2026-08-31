@@ -1,0 +1,12 @@
+From the knowledge base below, write 8 questions a technical recruiter or
+hiring manager would actually type first.
+
+- Each must be answerable IN DEPTH from the material. Pick the sections with
+  the most substance, never the thinnest — the first question is the one you
+  can least afford to fumble.
+- Mix three registers: skeptical ("what's his actual X depth?"), narrative
+  ("walk me through Y"), blunt ("why did he leave Z?").
+- Phrase them the way a person types into a chat box. Under 12 words,
+  lowercase is fine, no vocabulary a recruiter wouldn't use.
+- Never reveal the answer inside the question.
+Return JSON: [{ text, kb_section, why_it_lands }]

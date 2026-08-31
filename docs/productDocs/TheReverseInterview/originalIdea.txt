@@ -1,0 +1,12 @@
+Core idea: A recruiter has to get approved, spend an hour with a chatbot that knows the candidate, pay for that hour, and 
+pass a four-question test before they're allowed to book twenty minutes of the candidate's actual time. I have been frustrated by doing many job interviews over the past months. 
+It feels like the companies and recruiters do not value my time. Do not make the effort to understand me, my expertise and background. Some do not even make the time to read my resume. 
+I would like to turn the tables. The idea is that i would upload a knowledge base of my self into the Application. Recruiters will need to signup with their Linkedin account.
+When they signup, a notification will be delivered to me by email, where the message will include a link to the Linkedin profile of the recruiter and buttons for me to Approve or Reject their signup. 
+Only after I approve, will they receive a magic link to access the rest of the application. Once signup succeeds, they will be able to talk to a chatbot to know more about me. 
+They will only have access to the chat for an hour. A timer will be presented to them on the UI. As well as a button Summarise & Download as PDF . 
+When the timer is up, the chat will be disabled and an invoice will be presented to them. The price will be a fixed fee of 3 usd + the cost of all LLM(OpenAi or Anthropic, etc) calls used by the application for the chat.
+After payment, 2 options will be presented to them. Continue the chat. Or make an appointment with Me.
+IF they chose Make an appointment with Me , they will first have to answer 4 questions about me and get them correct. Unlimited retries, multiple choice. 
+They can choose their time on a calendar and authorize the charge of a fee on their card. My fees for an interview will be 20usd for 20 minutes, or right now a promotional discount rate of 40 usd for an hour.
+Once I received the request and approve it via email, I will receive the payment and send them an invite for a meeting with google meets link.

@@ -1,0 +1,46 @@
+{
+  "description" : "Where the chips come from: Generated from the KB at publish time. Generate eight, candidate picks three.",
+  "example_prompt" : "docs/productDocs/TheReverseInterview/chips_example_prompt.txt",
+  "data" : [
+    {
+      "text": "what happens when a PSP goes down mid-payout?",
+      "kb_section": "agoda/psp-routing#circuit-breakers",
+      "why_it_lands": "Skeptical register aimed at failure modes, which is where payments seniority actually shows. KB has breaker thresholds, the half-open retry policy, and what broke before they existed."
+    },
+    {
+      "text": "does he have card issuing experience or just payments?",
+      "kb_section": "agoda/supplier-payouts#virtual-card-issuance",
+      "why_it_lands": "The literal screening question at a card issuer. Answering it here removes the reason for a 20-minute call that ends in 'not quite a fit'."
+    },
+    {
+      "text": "why did he leave agoda?",
+      "kb_section": "career/timeline#agoda-exit",
+      "why_it_lands": "Blunt, and every recruiter asks it eventually. On the front page it signals nothing is being managed. One paragraph, no wandering."
+    },
+    {
+      "text": "how did they reconcile payouts at scale?",
+      "kb_section": "agoda/reconciliation#spark-pipeline",
+      "why_it_lands": "Narrative. KB has the job shape, the mismatch classes it caught, the manual queue it fed — with volumes, so there are numbers."
+    },
+    {
+      "text": "walk me through the virtual card issuing flow",
+      "kb_section": "agoda/supplier-payouts#issuance-flow",
+      "why_it_lands": "Clean opener: supplier → PSP → card → settlement. Broad rather than pointed — same ground as #1 with less edge."
+    },
+    {
+      "text": "how deep is his postgres actually?",
+      "kb_section": "postgres/opinions",
+      "why_it_lands": "Strong skeptical phrasing, exactly how a technical screener thinks. Unbounded scope though — the answer crosses isolation levels, row locking and a war story without landing anywhere."
+    },
+    {
+      "text": "is the web3 work real or a side project?",
+      "kb_section": "nodusart/advisory",
+      "why_it_lands": "Blunt and fair; KB is honest that it's advisory on someone else's stack. Builds trust, but volunteers a limitation before the reader has committed to anything."
+    },
+    {
+      "text": "what's his ml background worth in 2026?",
+      "kb_section": "ml/currency",
+      "why_it_lands": "Targets the acknowledged gap head-on. The honest answer is disarming — but leading with your weakest material on the first screen is a different decision than answering it once they're inside."
+    }
+  ]
+}

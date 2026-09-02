@@ -75,7 +75,7 @@ func FromEnvironment() (Config, error) {
 		ChromaURL:        envOr("CHROMA_URL", "http://localhost:8000"),
 		ChromaTenant:     envOr("CHROMA_TENANT", "default_tenant"),
 		ChromaDatabase:   envOr("CHROMA_DATABASE", "default_database"),
-		ChromaCollection: envOr("CHROMA_COLLECTION", "course_knowledge"),
+		ChromaCollection: envOr("CHROMA_COLLECTION", "kb_sections_vectors"),
 		OpenAIBaseURL:    envOr("OPENAI_BASE_URL", "https://api.openai.com"),
 		OpenAIAPIKey:     os.Getenv("OPENAI_API_KEY"),
 		EmbeddingModel:   envOr("EMBEDDING_MODEL", "text-embedding-3-small"),

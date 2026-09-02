@@ -5,10 +5,10 @@ import { getCurrentUser } from "@/lib/session";
 /**
  * The server-side seam to the Go API.
  *
- * Everything under `app/api/courses/*` is a proxy in front of this, and the
+ * Everything under `app/api/kb/*` is a proxy in front of this, and the
  * reason is that the browser must not hold the gateway's API key. The web app
  * is a BFF: it resolves who is signed in from the cookie, adds the credentials,
- * and forwards. Screens keep calling same-origin `/api/courses/*` through
+ * and forwards. Screens keep calling same-origin `/api/kb/*` through
  * lib/api-client.ts and know nothing about any of it.
  *
  * `API_BASE_URL` is deliberately not `NEXT_PUBLIC_`: a public env var is baked
@@ -61,21 +61,21 @@ export function errorResponse(
 
 /**
  * A fetch that never reached the gateway: the container is down, or DNS is. The
- * Specialist gets something true and actionable rather than a stack trace, and
- * the `code` lets a screen tell "the service is down" apart from "your course is
+ * candidate gets something true and actionable rather than a stack trace, and
+ * the `code` lets a screen tell "the service is down" apart from "your knowledge base is
  * gone".
  */
 const UNREACHABLE: GatewayError = {
   code: "gateway_unreachable",
-  message: "The course service isn't responding. Try again in a moment.",
+  message: "The knowledge-base service isn't responding. Try again in a moment.",
 };
 
 type GatewayInit = Omit<RequestInit, "body"> & { body?: unknown };
 
 /**
- * One request to the Go API, as the signed-in Specialist.
+ * One request to the Go API, as the signed-in candidate.
  *
- * `X-Specialist-Id` is the server-side half of the `SIGN IN AS` switcher. The
+ * `X-Candidate-Id` is the server-side half of the `SIGN IN AS` switcher. The
  * gateway trusts it because the API key gates this hop — which is POC-grade
  * auth, exactly as POC_UserJourney.md §0 says, and must be replaced before this
  * meets a real user.
@@ -91,13 +91,13 @@ export async function gatewayFetch(
     ...rest,
     headers: {
       "X-API-Key": apiKey(),
-      "X-Specialist-Id": user.id,
+      "X-Candidate-Id": user.id,
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
-    // Course data changes as the Specialist edits it; a cached studio list would
-    // show a course that has already been published as a draft.
+    // Knowledge-base data changes as the candidate edits it; a cached studio list would
+    // show one that has already been published as a draft.
     cache: "no-store",
   });
 }

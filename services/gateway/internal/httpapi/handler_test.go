@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/example/kpi-courses/services/gateway/internal/api"
-	"github.com/example/kpi-courses/services/gateway/internal/courses"
-	"github.com/example/kpi-courses/services/gateway/internal/store"
+	"github.com/example/reverse-interview/services/gateway/internal/api"
+	"github.com/example/reverse-interview/services/gateway/internal/kb"
+	"github.com/example/reverse-interview/services/gateway/internal/store"
 )
 
 // ── fakes ────────────────────────────────────────────────────────────────────
@@ -24,84 +24,88 @@ import (
 // watcher writes from its own goroutine while the stream reads from the request's.
 type fakeStore struct {
 	mu        sync.Mutex
-	courses   map[string]api.Course
+	stored    map[string]api.KnowledgeBase
 	users     map[string]api.User
-	created   []api.Course
+	created   []api.KnowledgeBase
 	returnErr error
 }
 
 func newFakeStore() *fakeStore {
 	return &fakeStore{
-		courses: map[string]api.Course{},
+		stored: map[string]api.KnowledgeBase{},
 		users: map[string]api.User{
-			"user-dana": {ID: "user-dana", Name: "Dana Mercado", Role: api.RoleSpecialist},
-			"user-sam":  {ID: "user-sam", Name: "Sam Okonkwo", Role: api.RoleSeeker},
+			"user-arun":  {ID: "user-arun", Name: "Arun Velasco", Role: api.RoleCandidate},
+			"user-priya": {ID: "user-priya", Name: "Priya Raman", Role: api.RoleRecruiter},
 		},
 	}
 }
 
-func (s *fakeStore) List(_ context.Context, specialistID string) ([]api.Course, error) {
+func (s *fakeStore) List(
+	_ context.Context, candidateID string,
+) ([]api.KnowledgeBase, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.returnErr != nil {
 		return nil, s.returnErr
 	}
-	out := []api.Course{}
-	for _, course := range s.courses {
-		if course.SpecialistID == specialistID {
-			out = append(out, course)
+	out := []api.KnowledgeBase{}
+	for _, knowledgeBase := range s.stored {
+		if knowledgeBase.CandidateID == candidateID {
+			out = append(out, knowledgeBase)
 		}
 	}
 	return out, nil
 }
 
-func (s *fakeStore) Get(_ context.Context, id string) (api.Course, error) {
+func (s *fakeStore) Get(_ context.Context, id string) (api.KnowledgeBase, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.returnErr != nil {
-		return api.Course{}, s.returnErr
+		return api.KnowledgeBase{}, s.returnErr
 	}
-	course, ok := s.courses[id]
+	knowledgeBase, ok := s.stored[id]
 	if !ok {
-		return api.Course{}, store.ErrNotFound
+		return api.KnowledgeBase{}, store.ErrNotFound
 	}
-	return course, nil
+	return knowledgeBase, nil
 }
 
-func (s *fakeStore) GetBySlug(_ context.Context, slug string) (api.Course, error) {
+func (s *fakeStore) GetBySlug(_ context.Context, slug string) (api.KnowledgeBase, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for _, course := range s.courses {
-		if course.Slug == slug {
-			return course, nil
+	for _, knowledgeBase := range s.stored {
+		if knowledgeBase.Slug == slug {
+			return knowledgeBase, nil
 		}
 	}
-	return api.Course{}, store.ErrNotFound
+	return api.KnowledgeBase{}, store.ErrNotFound
 }
 
-func (s *fakeStore) Create(_ context.Context, course api.Course) (api.Course, error) {
+func (s *fakeStore) Create(
+	_ context.Context, knowledgeBase api.KnowledgeBase,
+) (api.KnowledgeBase, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.returnErr != nil {
-		return api.Course{}, s.returnErr
+		return api.KnowledgeBase{}, s.returnErr
 	}
-	s.courses[course.ID] = course
-	s.created = append(s.created, course)
-	return course, nil
+	s.stored[knowledgeBase.ID] = knowledgeBase
+	s.created = append(s.created, knowledgeBase)
+	return knowledgeBase, nil
 }
 
 func (s *fakeStore) Update(
-	_ context.Context, id string, mutate func(api.Course) api.Course,
-) (api.Course, error) {
+	_ context.Context, id string, mutate func(api.KnowledgeBase) api.KnowledgeBase,
+) (api.KnowledgeBase, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	current, ok := s.courses[id]
+	current, ok := s.stored[id]
 	if !ok {
-		return api.Course{}, store.ErrNotFound
+		return api.KnowledgeBase{}, store.ErrNotFound
 	}
 	updated := mutate(current)
 	updated.ID = current.ID
-	s.courses[id] = updated
+	s.stored[id] = updated
 	return updated, nil
 }
 
@@ -109,8 +113,8 @@ func (s *fakeStore) ListRunning(context.Context) ([]string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	ids := []string{}
-	for id, course := range s.courses {
-		if course.IngestStatus == api.IngestRunning {
+	for id, knowledgeBase := range s.stored {
+		if knowledgeBase.IngestStatus == api.IngestRunning {
 			ids = append(ids, id)
 		}
 	}
@@ -127,16 +131,16 @@ func (s *fakeStore) User(_ context.Context, id string) (api.User, error) {
 	return user, nil
 }
 
-func (s *fakeStore) put(course api.Course) {
+func (s *fakeStore) put(knowledgeBase api.KnowledgeBase) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.courses[course.ID] = course
+	s.stored[knowledgeBase.ID] = knowledgeBase
 }
 
-func (s *fakeStore) snapshot(id string) api.Course {
+func (s *fakeStore) snapshot(id string) api.KnowledgeBase {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.courses[id]
+	return s.stored[id]
 }
 
 func (s *fakeStore) createdCount() int {
@@ -148,17 +152,19 @@ func (s *fakeStore) createdCount() int {
 // fakeRuntime stands in for Temporal. `result` and `runErr` decide how a run ends;
 // `lines` is what the progress query reports.
 type fakeRuntime struct {
-	mu         sync.Mutex
-	started    []courses.IngestionInput
-	lines      []string
-	result     api.IngestResult
-	runErr     error
-	softened   string
-	softenErr  error
-	softenSeen string
+	mu            sync.Mutex
+	started       []kb.IngestionInput
+	lines         []string
+	result        api.IngestResult
+	runErr        error
+	rephrased     string
+	rephraseErr   error
+	rephraseSeen  string
+	registerSeen  string
+	rephraseCalls int
 }
 
-func (f *fakeRuntime) StartIngestion(_ context.Context, input courses.IngestionInput) error {
+func (f *fakeRuntime) StartIngestion(_ context.Context, input kb.IngestionInput) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.started = append(f.started, input)
@@ -180,17 +186,21 @@ func (f *fakeRuntime) AwaitResult(context.Context, string) (api.IngestResult, er
 	return f.result, nil
 }
 
-func (f *fakeRuntime) SoftenClaim(_ context.Context, claim string) (string, error) {
+func (f *fakeRuntime) RephraseChip(
+	_ context.Context, text, register string,
+) (string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.softenSeen = claim
-	return f.softened, f.softenErr
+	f.rephraseSeen = text
+	f.registerSeen = register
+	f.rephraseCalls++
+	return f.rephrased, f.rephraseErr
 }
 
-func (f *fakeRuntime) startedRuns() []courses.IngestionInput {
+func (f *fakeRuntime) startedRuns() []kb.IngestionInput {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return append([]courses.IngestionInput(nil), f.started...)
+	return append([]kb.IngestionInput(nil), f.started...)
 }
 
 type fakeKnowledge struct {
@@ -250,11 +260,11 @@ func newHarness(t *testing.T, options ...func(*harness)) *harness {
 	h.handler = New(Options{
 		APIKey:     "secret",
 		Repository: h.store,
-		Ingestor: courses.NewIngestor(courses.IngestorOptions{
+		Ingestor: kb.NewIngestor(kb.IngestorOptions{
 			Repository: h.store,
 			Runtime:    h.runtime,
 			Logger:     discardLogger(),
-			NewID:      func() string { return "course-test" },
+			NewID:      func() string { return "kb-test" },
 			MaxStream:  5 * time.Second,
 		}),
 		Runtime:   h.runtime,
@@ -272,7 +282,7 @@ func newLimitedHandler(limiter RateLimiter) http.Handler {
 		APIKey:     "secret",
 		Repository: fake,
 		Runtime:    runtime,
-		Ingestor: courses.NewIngestor(courses.IngestorOptions{
+		Ingestor: kb.NewIngestor(kb.IngestorOptions{
 			Repository: fake, Runtime: runtime, Logger: discardLogger(),
 		}),
 		Knowledge: &fakeKnowledge{},
@@ -282,13 +292,13 @@ func newLimitedHandler(limiter RateLimiter) http.Handler {
 	})
 }
 
-// do issues an authenticated request as Dana, the seeded Specialist.
+// do issues an authenticated request as Arun, the seeded candidate.
 func do(handler http.Handler, method, target, body string) *httptest.ResponseRecorder {
-	return doAs(handler, method, target, body, "user-dana")
+	return doAs(handler, method, target, body, "user-arun")
 }
 
 func doAs(
-	handler http.Handler, method, target, body, specialistID string,
+	handler http.Handler, method, target, body, candidateID string,
 ) *httptest.ResponseRecorder {
 	var reader io.Reader
 	if body != "" {
@@ -296,8 +306,8 @@ func doAs(
 	}
 	request := httptest.NewRequest(method, target, reader)
 	request.Header.Set("X-API-Key", "secret")
-	if specialistID != "" {
-		request.Header.Set(specialistHeader, specialistID)
+	if candidateID != "" {
+		request.Header.Set(candidateHeader, candidateID)
 	}
 	if body != "" {
 		request.Header.Set("Content-Type", "application/json")
@@ -307,35 +317,80 @@ func doAs(
 	return recorder
 }
 
-func readyCourse(id, specialistID string) api.Course {
-	course := api.Course{
-		ID: id, SpecialistID: specialistID, SpecialistName: "Dana Mercado",
-		Slug: "hold-your-number", Title: "Hold Your Number",
-		Tagline: "Stop discounting to close.", PriceCents: 34900,
-		Status: api.StatusDraft, IngestStatus: api.IngestReady,
-		Positions: []api.Position{{
-			Claim: "A price objection is never about price.", Because: "Because reasons.",
-			Pushback: "objection → answer", Quote: "verbatim span",
-		}},
-		Lessons: []api.Lesson{{
-			Ord: 1, Title: "Lesson one", Objective: "Can do the thing",
-			KeyPoints: []string{"a point"}, BodyMD: "the body",
-		}},
+func readyKB(id, candidateID string) api.KnowledgeBase {
+	knowledgeBase := api.KnowledgeBase{
+		ID: id, CandidateID: candidateID, CandidateName: "Arun Velasco",
+		Slug: "arun-velasco", Title: "Arun Velasco",
+		Tagline: "Payments engineer. Eleven years, four employers, one gap.",
+		Status:  api.StatusDraft, IngestStatus: api.IngestReady,
+		PreRoll: api.PreRoll{
+			Headline: "Sixty minutes. Starts when you hit send.",
+			Bullets:  []string{"Full timeline, four employers, gap included"},
+		},
+		Chips: []api.Chip{
+			{
+				Text: "why did he leave agoda?", KBSection: "career/timeline#agoda-exit",
+				Register: api.RegisterBlunt, Selected: true,
+				WhyItLands: "Every recruiter asks it eventually.",
+			},
+			{
+				Text: "how deep is his postgres actually?", KBSection: "postgres/opinions",
+				Register: api.RegisterSkeptical, Selected: true,
+			},
+			{
+				Text: "walk me through the payouts flow", KBSection: "postgres/opinions",
+				Register: api.RegisterNarrative, Selected: true,
+			},
+		},
+		Quiz: quizWithEveryCategory(),
+		Sections: []api.Section{
+			{
+				Ord: 1, Path: "career/timeline", Anchor: "agoda-exit",
+				Title: "Why he left Agoda", Summary: "One paragraph, no wandering.",
+				BodyMD: "The platform reached the state he wanted.",
+			},
+			{
+				Ord: 2, Path: "postgres/opinions", Title: "Postgres opinions",
+				Summary: "Six stated positions.",
+				BodyMD:  "A queue in your database is the correct default.",
+			},
+		},
 		SourceText: "the whole corpus",
 		CreatedAt:  "2026-08-26T10:00:00Z", UpdatedAt: "2026-08-26T10:00:00Z",
 	}
-	course.Normalize()
-	return course
+	knowledgeBase.Normalize()
+	return knowledgeBase
 }
 
-// withCourse seeds one course owned by Dana.
-func withCourse(mutate ...func(*api.Course)) func(*harness) {
+// A quiz that satisfies the gate: one item in every category it samples from.
+func quizWithEveryCategory() []api.QuizItem {
+	categories := []string{
+		api.CategoryMotivation, api.CategoryJudgement,
+		api.CategoryLimits, api.CategorySubstance,
+	}
+	items := make([]api.QuizItem, 0, len(categories))
+	for index, category := range categories {
+		items = append(items, api.QuizItem{
+			ID:            string(rune('a' + index)),
+			Category:      category,
+			Question:      "A question about " + category,
+			Choices:       []string{"one", "two", "three", "four"},
+			CorrectIndex:  1,
+			Rationale:     "Because the knowledge base says so.",
+			SourceSection: "postgres/opinions",
+		})
+	}
+	return items
+}
+
+// withKB seeds one knowledge base owned by Arun.
+func withKB(mutate ...func(*api.KnowledgeBase)) func(*harness) {
 	return func(h *harness) {
-		course := readyCourse("course-1", "user-dana")
+		knowledgeBase := readyKB("kb-1", "user-arun")
 		for _, apply := range mutate {
-			apply(&course)
+			apply(&knowledgeBase)
 		}
-		h.store.put(course)
+		h.store.put(knowledgeBase)
 	}
 }
 
@@ -358,25 +413,27 @@ func TestAuthenticationIsRequired(t *testing.T) {
 	h := newHarness(t)
 	recorder := httptest.NewRecorder()
 
-	h.handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/v1/courses", nil))
+	h.handler.ServeHTTP(
+		recorder, httptest.NewRequest(http.MethodGet, "/v1/knowledge-bases", nil),
+	)
 
 	if recorder.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusUnauthorized)
 	}
 }
 
-// The API key proves the caller is the web app; the specialist header says who is
-// signed in. A valid key naming an identity nobody seeded is not a Specialist.
-func TestAnUnknownSpecialistIsRejected(t *testing.T) {
+// The API key proves the caller is the web app; the candidate header says who is signed
+// in. A valid key naming an identity nobody seeded is not a candidate.
+func TestAnUnknownCandidateIsRejected(t *testing.T) {
 	h := newHarness(t)
 
 	for _, id := range []string{"", "user-nobody", "../admin"} {
-		recorder := doAs(h.handler, http.MethodGet, "/v1/courses", "", id)
+		recorder := doAs(h.handler, http.MethodGet, "/v1/knowledge-bases", "", id)
 		if recorder.Code != http.StatusUnauthorized {
-			t.Fatalf("specialist %q: status = %d, want 401", id, recorder.Code)
+			t.Fatalf("candidate %q: status = %d, want 401", id, recorder.Code)
 		}
 		if code := decodeError(t, recorder).Code; code != "unknown_user" {
-			t.Fatalf("specialist %q: code = %q", id, code)
+			t.Fatalf("candidate %q: code = %q", id, code)
 		}
 	}
 }
@@ -395,7 +452,7 @@ func TestHealthzDoesNotRequireAuthentication(t *testing.T) {
 func TestRequestsThatFailAuthenticationStillConsumeRateLimitBudget(t *testing.T) {
 	limiter := &recordingLimiter{allow: true}
 	handler := newLimitedHandler(limiter)
-	request := httptest.NewRequest(http.MethodGet, "/v1/courses", nil)
+	request := httptest.NewRequest(http.MethodGet, "/v1/knowledge-bases", nil)
 	request.Header.Set("X-API-Key", "wrong-key")
 	recorder := httptest.NewRecorder()
 
@@ -413,7 +470,7 @@ func TestRequestsThatFailAuthenticationStillConsumeRateLimitBudget(t *testing.T)
 
 func TestExhaustedRateLimitIsRejectedBeforeTheKeyCheck(t *testing.T) {
 	handler := newLimitedHandler(&recordingLimiter{allow: false})
-	request := httptest.NewRequest(http.MethodGet, "/v1/courses", nil)
+	request := httptest.NewRequest(http.MethodGet, "/v1/knowledge-bases", nil)
 	request.Header.Set("X-API-Key", "wrong-key")
 	recorder := httptest.NewRecorder()
 
@@ -443,7 +500,7 @@ func TestHealthRoutesAreNotRateLimited(t *testing.T) {
 func TestRateLimiterOutageFailsOpen(t *testing.T) {
 	handler := newLimitedHandler(&recordingLimiter{returnErr: errors.New("redis is down")})
 
-	recorder := do(handler, http.MethodGet, "/v1/courses", "")
+	recorder := do(handler, http.MethodGet, "/v1/knowledge-bases", "")
 
 	// A Redis outage must not take down the studio, so the request is served anyway.
 	if recorder.Code != http.StatusOK {
@@ -481,7 +538,7 @@ func TestRateLimitKeyIdentifiesEachClientAddress(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, "/v1/courses", nil)
+			request := httptest.NewRequest(http.MethodGet, "/v1/knowledge-bases", nil)
 			request.RemoteAddr = testCase.remoteAddr
 			if testCase.forwarded != "" {
 				request.Header.Set("X-Forwarded-For", testCase.forwarded)
@@ -496,40 +553,43 @@ func TestRateLimitKeyIdentifiesEachClientAddress(t *testing.T) {
 
 // ── ownership ────────────────────────────────────────────────────────────────
 
-func TestAnotherSpecialistsCourseIsRefused(t *testing.T) {
-	h := newHarness(t, withCourse())
+func TestAnotherUsersKnowledgeBaseIsRefused(t *testing.T) {
+	h := newHarness(t, withKB())
 
 	cases := []struct{ method, target string }{
-		{http.MethodGet, "/v1/courses/course-1"},
-		{http.MethodPost, "/v1/courses/course-1/publish"},
-		{http.MethodPost, "/v1/courses/course-1/reingest"},
-		{http.MethodPost, "/v1/courses/course-1/positions/0/soften"},
+		{http.MethodGet, "/v1/knowledge-bases/kb-1"},
+		{http.MethodPost, "/v1/knowledge-bases/kb-1/publish"},
+		{http.MethodPost, "/v1/knowledge-bases/kb-1/reingest"},
+		{http.MethodPost, "/v1/knowledge-bases/kb-1/chips/0/rephrase"},
 	}
 	for _, testCase := range cases {
-		recorder := doAs(h.handler, testCase.method, testCase.target, "", "user-sam")
+		recorder := doAs(h.handler, testCase.method, testCase.target, "", "user-priya")
 		if recorder.Code != http.StatusForbidden {
-			t.Errorf("%s %s: status = %d, want 403", testCase.method, testCase.target, recorder.Code)
+			t.Errorf(
+				"%s %s: status = %d, want 403",
+				testCase.method, testCase.target, recorder.Code,
+			)
 		}
 	}
-	if h.store.snapshot("course-1").Status == api.StatusPublished {
-		t.Fatal("another Specialist published somebody else's course")
+	if h.store.snapshot("kb-1").Status == api.StatusPublished {
+		t.Fatal("somebody else's knowledge base was published")
 	}
 }
 
-func TestUnknownCourseIsNotFound(t *testing.T) {
+func TestUnknownKnowledgeBaseIsNotFound(t *testing.T) {
 	h := newHarness(t)
 
-	recorder := do(h.handler, http.MethodGet, "/v1/courses/course-missing", "")
+	recorder := do(h.handler, http.MethodGet, "/v1/knowledge-bases/kb-missing", "")
 
 	if recorder.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)
 	}
 }
 
-func TestCourseIDsWithPathSeparatorsAreRejected(t *testing.T) {
+func TestIDsWithPathSeparatorsAreRejected(t *testing.T) {
 	h := newHarness(t)
 
-	recorder := do(h.handler, http.MethodGet, "/v1/courses/..%2Fadmin", "")
+	recorder := do(h.handler, http.MethodGet, "/v1/knowledge-bases/..%2Fadmin", "")
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
@@ -538,48 +598,55 @@ func TestCourseIDsWithPathSeparatorsAreRejected(t *testing.T) {
 
 // ── the withholding rule ─────────────────────────────────────────────────────
 
-// DESIGN.md §4.5 asserted at the edge. The public projection is unauthenticated by
-// design — Journey 2's course page has no session — and it must carry the claim and
-// nothing else.
-func TestPublicAudienceNeedsNoIdentityAndWithholdsTheArgument(t *testing.T) {
-	h := newHarness(t, withCourse())
+// Asserted at the edge. The public projection is unauthenticated by design — Journey 2's
+// /k/:slug page has no session — and the quiz must not be in it at any cost: it gates
+// booking real time, and a leaked correct_index makes that gate a formality.
+func TestPublicAudienceNeedsNoIdentityAndWithholdsTheQuiz(t *testing.T) {
+	h := newHarness(t, withKB())
 
-	recorder := doAs(h.handler, http.MethodGet, "/v1/courses/course-1?audience=public", "", "")
+	recorder := doAs(
+		h.handler, http.MethodGet, "/v1/knowledge-bases/kb-1?audience=public", "", "",
+	)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 	}
 	body := recorder.Body.String()
 	for _, forbidden := range []string{
-		"because", "pushback", "quote", "body_md", "source_text", "voice_card",
-		"Because reasons.", "the whole corpus",
+		"quiz", "correct_index", "choices", "rationale",
+		"why_it_lands", "body_md", "source_text", "kb_section",
+		"Every recruiter asks it eventually", "the whole corpus",
+		"A queue in your database is the correct default",
 	} {
 		if strings.Contains(body, forbidden) {
 			t.Errorf("public payload leaked %q: %s", forbidden, body)
 		}
 	}
-	if !strings.Contains(body, "A price objection is never about price.") {
-		t.Fatalf("public payload dropped the claim, which is the hook: %s", body)
+	if !strings.Contains(body, "why did he leave agoda?") {
+		t.Fatalf("public payload dropped the chips, which are the page: %s", body)
 	}
 }
 
-// ── patch, publish, soften ───────────────────────────────────────────────────
+// ── patch, publish, rephrase ─────────────────────────────────────────────────
 
 func TestPatchAppliesOnlyWhatWasSentAndRenumbers(t *testing.T) {
-	h := newHarness(t, withCourse())
+	h := newHarness(t, withKB())
 
-	recorder := do(h.handler, http.MethodPatch, "/v1/courses/course-1",
-		`{"lessons":[{"ord":9,"title":"b"},{"ord":4,"title":"a"}]}`)
+	recorder := do(h.handler, http.MethodPatch, "/v1/knowledge-bases/kb-1",
+		`{"sections":[{"ord":9,"path":"b","title":"b"},{"ord":4,"path":"a","title":"a"}]}`)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 	}
-	saved := h.store.snapshot("course-1")
-	if saved.Lessons[0].Ord != 1 || saved.Lessons[1].Ord != 2 {
-		t.Fatalf("ordinals = %+v", saved.Lessons)
+	saved := h.store.snapshot("kb-1")
+	if saved.Sections[0].Ord != 1 || saved.Sections[1].Ord != 2 {
+		t.Fatalf("ordinals = %+v", saved.Sections)
 	}
-	if saved.Title != "Hold Your Number" {
-		t.Fatalf("a lessons-only patch changed the title: %q", saved.Title)
+	if saved.Title != "Arun Velasco" {
+		t.Fatalf("a sections-only patch changed the title: %q", saved.Title)
+	}
+	if len(saved.Quiz) != 4 {
+		t.Fatalf("a sections-only patch dropped the quiz: %+v", saved.Quiz)
 	}
 }
 
@@ -587,65 +654,99 @@ func TestPatchRejectsBadEdits(t *testing.T) {
 	cases := []struct{ name, body, want string }{
 		{name: "nothing to change", body: `{}`, want: "patch"},
 		{name: "blank title", body: `{"title":"   "}`, want: "title"},
-		{name: "negative price", body: `{"price_cents":-1}`, want: "price_cents"},
 		{
-			name: "lesson without a title",
-			body: `{"lessons":[{"ord":1,"title":""}]}`,
-			want: "lessons[0].title",
+			name: "section without a title",
+			body: `{"sections":[{"ord":1,"path":"a","title":""}]}`,
+			want: "sections[0].title",
 		},
 		{
-			name: "position without a claim",
-			body: `{"positions":[{"claim":"","because":"b","pushback":"p"}]}`,
-			want: "positions[0].claim",
+			// Two sections sharing an id turn every reference to it into a coin flip.
+			name: "two sections with the same id",
+			body: `{"sections":[` +
+				`{"ord":1,"path":"a","anchor":"x","title":"one"},` +
+				`{"ord":2,"path":"a","anchor":"x","title":"two"}]}`,
+			want: "duplicates another section's id",
+		},
+		{
+			name: "chip without text",
+			body: `{"chips":[{"text":"","kb_section":"a"}]}`,
+			want: "chips[0].text",
+		},
+		{
+			name: "chip in a register nobody renders",
+			body: `{"chips":[{"text":"a question","register":"wry"}]}`,
+			want: "chips[0].register",
+		},
+		{
+			// The gate renders four options and scores one. Three is a broken screen.
+			name: "quiz item with three options",
+			body: `{"quiz":[{"question":"q","category":"limits",` +
+				`"choices":["a","b","c"],"correct_index":0}]}`,
+			want: "quiz[0].choices",
+		},
+		{
+			name: "quiz answer that points at no option",
+			body: `{"quiz":[{"question":"q","category":"limits",` +
+				`"choices":["a","b","c","d"],"correct_index":9}]}`,
+			want: "quiz[0].correct_index",
+		},
+		{
+			name: "pre-roll with five bullets",
+			body: `{"pre_roll":{"headline":"h","bullets":["a","b","c","d","e"]}}`,
+			want: "pre_roll.bullets",
 		},
 	}
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			h := newHarness(t, withCourse())
+			h := newHarness(t, withKB())
 
-			recorder := do(h.handler, http.MethodPatch, "/v1/courses/course-1", testCase.body)
+			recorder := do(
+				h.handler, http.MethodPatch, "/v1/knowledge-bases/kb-1", testCase.body,
+			)
 
 			if recorder.Code != http.StatusBadRequest {
 				t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 			}
 			if !strings.Contains(recorder.Body.String(), testCase.want) {
-				t.Fatalf("body = %s, want mention of %q", recorder.Body.String(), testCase.want)
+				t.Fatalf(
+					"body = %s, want mention of %q", recorder.Body.String(), testCase.want,
+				)
 			}
 		})
 	}
 }
 
 func TestPublishReturnsTheShareableLink(t *testing.T) {
-	h := newHarness(t, withCourse())
+	h := newHarness(t, withKB())
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/course-1/publish", "")
+	recorder := do(h.handler, http.MethodPost, "/v1/knowledge-bases/kb-1/publish", "")
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 	}
 	var response struct {
-		URL    string     `json:"url"`
-		Course api.Course `json:"course"`
+		URL           string            `json:"url"`
+		KnowledgeBase api.KnowledgeBase `json:"knowledge_base"`
 	}
 	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if response.URL != "/c/hold-your-number" {
+	if response.URL != "/k/arun-velasco" {
 		t.Fatalf("url = %q", response.URL)
 	}
-	if response.Course.Status != api.StatusPublished {
-		t.Fatalf("status = %q", response.Course.Status)
+	if response.KnowledgeBase.Status != api.StatusPublished {
+		t.Fatalf("status = %q", response.KnowledgeBase.Status)
 	}
 }
 
 func TestPublishReportsEveryBlockerAtOnce(t *testing.T) {
-	h := newHarness(t, withCourse(func(c *api.Course) {
-		c.Tagline = ""
-		c.PriceCents = 0
+	h := newHarness(t, withKB(func(k *api.KnowledgeBase) {
+		k.Tagline = ""
+		k.Chips[0].Selected = false
 	}))
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/course-1/publish", "")
+	recorder := do(h.handler, http.MethodPost, "/v1/knowledge-bases/kb-1/publish", "")
 
 	if recorder.Code != http.StatusConflict {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
@@ -657,64 +758,90 @@ func TestPublishReportsEveryBlockerAtOnce(t *testing.T) {
 	// One round trip, every problem: a dialog that reveals blockers one at a time is a
 	// dialog nobody finishes.
 	if len(envelope.Blockers) != 2 {
-		t.Fatalf("blockers = %v, want both the tagline and the price", envelope.Blockers)
+		t.Fatalf("blockers = %v, want both the tagline and the selection", envelope.Blockers)
 	}
-	if h.store.snapshot("course-1").Status == api.StatusPublished {
-		t.Fatal("a blocked course was published anyway")
+	if h.store.snapshot("kb-1").Status == api.StatusPublished {
+		t.Fatal("a blocked knowledge base was published anyway")
 	}
 }
 
-// POC_UserJourney.md: fewer than three positions warns, it never blocks.
-func TestThinPositionsDoNotBlockPublishing(t *testing.T) {
-	h := newHarness(t, withCourse(func(c *api.Course) { c.Positions = []api.Position{} }))
+// A candidate with a sparse corpus still has something worth publishing.
+func TestAThinKnowledgeBaseStillPublishes(t *testing.T) {
+	h := newHarness(t, withKB(func(k *api.KnowledgeBase) {
+		k.Sections = k.Sections[:1]
+	}))
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/course-1/publish", "")
+	recorder := do(h.handler, http.MethodPost, "/v1/knowledge-bases/kb-1/publish", "")
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 	}
 }
 
-func TestSoftenRewritesTheClaimInPlace(t *testing.T) {
-	h := newHarness(t, withCourse(), func(h *harness) {
-		h.runtime.softened = "A price objection is usually not about price."
+func TestRephraseRewritesTheChipInPlace(t *testing.T) {
+	h := newHarness(t, withKB(), func(h *harness) {
+		h.runtime.rephrased = "why did he actually leave agoda?"
 	})
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/course-1/positions/0/soften", "")
+	recorder := do(
+		h.handler, http.MethodPost,
+		"/v1/knowledge-bases/kb-1/chips/0/rephrase?register=skeptical", "",
+	)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 	}
-	saved := h.store.snapshot("course-1")
-	if saved.Positions[0].Claim != "A price objection is usually not about price." {
-		t.Fatalf("claim = %q", saved.Positions[0].Claim)
+	if h.runtime.registerSeen != api.RegisterSkeptical {
+		t.Fatalf("register = %q, want the one the caller asked for", h.runtime.registerSeen)
 	}
-	// Softening rewrites the hook. The argument behind it is the Specialist's own words
-	// and must survive untouched.
-	if saved.Positions[0].Because != "Because reasons." {
-		t.Fatalf("soften rewrote the argument too: %q", saved.Positions[0].Because)
+	saved := h.store.snapshot("kb-1")
+	if saved.Chips[0].Text != "why did he actually leave agoda?" {
+		t.Fatalf("text = %q", saved.Chips[0].Text)
+	}
+	if saved.Chips[0].Register != api.RegisterSkeptical {
+		t.Fatalf("the stored register did not follow the rewrite: %q", saved.Chips[0].Register)
+	}
+	// Rewriting the question must not disturb what the candidate decided about it.
+	if !saved.Chips[0].Selected || saved.Chips[0].KBSection != "career/timeline#agoda-exit" {
+		t.Fatalf("rephrase changed more than the text: %+v", saved.Chips[0])
 	}
 }
 
-func TestSofteningAPositionThatIsNotThereIsNotFound(t *testing.T) {
-	h := newHarness(t, withCourse())
+func TestRephraseWithoutARegisterKeepsTheChipsOwn(t *testing.T) {
+	h := newHarness(t, withKB(), func(h *harness) {
+		h.runtime.rephrased = "why did he leave, really?"
+	})
+
+	do(h.handler, http.MethodPost, "/v1/knowledge-bases/kb-1/chips/0/rephrase", "")
+
+	if h.runtime.registerSeen != api.RegisterBlunt {
+		t.Fatalf("register = %q, want the chip's own", h.runtime.registerSeen)
+	}
+}
+
+func TestRephrasingAChipThatIsNotThereIsNotFound(t *testing.T) {
+	h := newHarness(t, withKB())
 
 	for _, index := range []string{"7", "-1", "banana"} {
 		recorder := do(
-			h.handler, http.MethodPost, "/v1/courses/course-1/positions/"+index+"/soften", "",
+			h.handler, http.MethodPost,
+			"/v1/knowledge-bases/kb-1/chips/"+index+"/rephrase", "",
 		)
 		if recorder.Code != http.StatusNotFound {
 			t.Errorf("index %q: status = %d, want 404", index, recorder.Code)
 		}
 	}
+	if h.runtime.rephraseCalls != 0 {
+		t.Fatal("a bad index still reached the model")
+	}
 }
 
-func TestSoftenFailureLeavesTheClaimAlone(t *testing.T) {
-	h := newHarness(t, withCourse(), func(h *harness) {
-		h.runtime.softenErr = errors.New("no model configured")
+func TestRephraseFailureLeavesTheChipAlone(t *testing.T) {
+	h := newHarness(t, withKB(), func(h *harness) {
+		h.runtime.rephraseErr = errors.New("no model configured")
 	})
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/course-1/positions/0/soften", "")
+	recorder := do(h.handler, http.MethodPost, "/v1/knowledge-bases/kb-1/chips/0/rephrase", "")
 
 	if recorder.Code != http.StatusBadGateway {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
@@ -722,8 +849,8 @@ func TestSoftenFailureLeavesTheClaimAlone(t *testing.T) {
 	if strings.Contains(recorder.Body.String(), "no model configured") {
 		t.Fatalf("upstream detail leaked: %s", recorder.Body.String())
 	}
-	if h.store.snapshot("course-1").Positions[0].Claim == "" {
-		t.Fatal("a failed rewrite cleared the claim")
+	if h.store.snapshot("kb-1").Chips[0].Text != "why did he leave agoda?" {
+		t.Fatal("a failed rewrite changed the question")
 	}
 }
 
@@ -732,18 +859,18 @@ func TestSoftenFailureLeavesTheClaimAlone(t *testing.T) {
 func TestIngestValidationRunsBeforeADraftIsWritten(t *testing.T) {
 	cases := []struct{ name, body, want string }{
 		{
-			name: "no title",
-			body: `{"tagline":"t","price_cents":1,"source_text":"` + longSource() + `"}`,
+			name: "no name",
+			body: `{"tagline":"t","source_text":"` + longSource() + `"}`,
 			want: "title",
 		},
 		{
-			name: "free",
-			body: `{"title":"T","tagline":"t","price_cents":0,"source_text":"` + longSource() + `"}`,
-			want: "price_cents",
+			name: "no one-liner",
+			body: `{"title":"T","source_text":"` + longSource() + `"}`,
+			want: "tagline",
 		},
 		{
 			name: "not enough material",
-			body: `{"title":"T","tagline":"t","price_cents":1,"source_text":"too short"}`,
+			body: `{"title":"T","tagline":"t","source_text":"too short"}`,
 			want: "source_text",
 		},
 	}
@@ -752,13 +879,17 @@ func TestIngestValidationRunsBeforeADraftIsWritten(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			h := newHarness(t)
 
-			recorder := do(h.handler, http.MethodPost, "/v1/courses/ingest", testCase.body)
+			recorder := do(
+				h.handler, http.MethodPost, "/v1/knowledge-bases/ingest", testCase.body,
+			)
 
 			if recorder.Code != http.StatusBadRequest {
 				t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 			}
 			if !strings.Contains(recorder.Body.String(), testCase.want) {
-				t.Fatalf("body = %s, want mention of %q", recorder.Body.String(), testCase.want)
+				t.Fatalf(
+					"body = %s, want mention of %q", recorder.Body.String(), testCase.want,
+				)
 			}
 			if h.store.createdCount() != 0 {
 				t.Fatal("an invalid request still wrote a draft")
@@ -772,19 +903,22 @@ func TestIngestValidationRunsBeforeADraftIsWritten(t *testing.T) {
 
 // The happy path, asserted on the wire: frames arrive in the order
 // services/web/lib/api-client.ts parses them, and `draft` comes first so a client that
-// sees nothing else still knows which course to retry.
+// sees nothing else still knows what to retry.
 func TestIngestStreamsDraftThenStatusThenResult(t *testing.T) {
 	h := newHarness(t, func(h *harness) {
-		h.runtime.lines = []string{"READING 1 OF 1 FILES · source.md", "EXTRACTING POSITIONS…"}
+		h.runtime.lines = []string{
+			"READING 1 OF 1 FILES · resume.md", "DRAFTING OPENING QUESTIONS…",
+		}
 		h.runtime.result = api.IngestResult{
-			Lessons:   []api.Lesson{{Title: "one"}, {Title: "two"}},
-			Positions: []api.Position{{Claim: "a claim"}},
+			Sections: []api.Section{{Path: "a", Title: "one"}, {Path: "b", Title: "two"}},
+			Chips:    []api.Chip{{Text: "a question"}},
+			Quiz:     quizWithEveryCategory(),
 		}
 	})
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/ingest",
-		`{"title":"Hold Your Number","tagline":"t","price_cents":34900,"source_text":"`+
-			longSource()+`","source_files":["source.md"]}`)
+	recorder := do(h.handler, http.MethodPost, "/v1/knowledge-bases/ingest",
+		`{"title":"Arun Velasco","tagline":"t","source_text":"`+
+			longSource()+`","source_files":["resume.md"]}`)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
@@ -799,37 +933,40 @@ func TestIngestStreamsDraftThenStatusThenResult(t *testing.T) {
 	if len(events) < 4 {
 		t.Fatalf("events = %+v", events)
 	}
-	if events[0].Type != "draft" || events[0].CourseID != "course-test" {
+	if events[0].Type != "draft" || events[0].KBID != "kb-test" {
 		t.Fatalf("first event = %+v, want the draft id before anything can fail", events[0])
 	}
 	if events[1].Type != "status" || events[2].Type != "status" {
 		t.Fatalf("status lines = %+v", events[1:3])
 	}
 	last := events[len(events)-1]
-	if last.Type != "result" || last.CourseID != "course-test" {
+	if last.Type != "result" || last.KBID != "kb-test" {
 		t.Fatalf("last event = %+v", last)
 	}
 
 	// The result is persisted by the watcher, not by the stream. "result" must not go
 	// out until that has landed, or the client navigates to an empty review screen.
-	saved := h.store.snapshot("course-test")
-	if saved.IngestStatus != api.IngestReady || len(saved.Lessons) != 2 {
-		t.Fatalf("saved course = %+v", saved)
+	saved := h.store.snapshot("kb-test")
+	if saved.IngestStatus != api.IngestReady || len(saved.Sections) != 2 {
+		t.Fatalf("saved knowledge base = %+v", saved)
 	}
-	if saved.Lessons[0].Ord != 1 || saved.Lessons[1].Ord != 2 {
-		t.Fatalf("ordinals were not assigned: %+v", saved.Lessons)
+	if saved.Sections[0].Ord != 1 || saved.Sections[1].Ord != 2 {
+		t.Fatalf("ordinals were not assigned: %+v", saved.Sections)
+	}
+	if len(saved.Quiz) != 4 {
+		t.Fatalf("the quiz did not survive persistence: %+v", saved.Quiz)
 	}
 }
 
 // A status line is only ever sent once, however many times the query is polled.
 func TestStatusLinesAreNotRepeated(t *testing.T) {
 	h := newHarness(t, func(h *harness) {
-		h.runtime.lines = []string{"READING…", "WRITING LESSON 1 OF 2…"}
-		h.runtime.result = api.IngestResult{Lessons: []api.Lesson{{Title: "one"}}}
+		h.runtime.lines = []string{"READING…", "WRITING SECTION 1 OF 2…"}
+		h.runtime.result = api.IngestResult{Sections: []api.Section{{Path: "a", Title: "one"}}}
 	})
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/ingest",
-		`{"title":"T","tagline":"t","price_cents":1,"source_text":"`+longSource()+`"}`)
+	recorder := do(h.handler, http.MethodPost, "/v1/knowledge-bases/ingest",
+		`{"title":"T","tagline":"t","source_text":"`+longSource()+`"}`)
 
 	seen := map[string]int{}
 	for _, event := range parseEvents(t, recorder.Body.String()) {
@@ -851,13 +988,12 @@ func TestAFailedRunLeavesARetryableDraft(t *testing.T) {
 		h.runtime.runErr = errors.New("worker is down")
 	})
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/ingest",
-		`{"title":"Hold Your Number","tagline":"t","price_cents":34900,"source_text":"`+
-			longSource()+`"}`)
+	recorder := do(h.handler, http.MethodPost, "/v1/knowledge-bases/ingest",
+		`{"title":"Arun Velasco","tagline":"t","source_text":"`+longSource()+`"}`)
 
 	events := parseEvents(t, recorder.Body.String())
 	last := events[len(events)-1]
-	if last.Type != "error" || last.Code != "ingest_failed" || last.CourseID != "course-test" {
+	if last.Type != "error" || last.Code != "ingest_failed" || last.KBID != "kb-test" {
 		t.Fatalf("last event = %+v", last)
 	}
 	// Infrastructure detail must not reach the person who dropped the files.
@@ -865,7 +1001,7 @@ func TestAFailedRunLeavesARetryableDraft(t *testing.T) {
 		t.Fatalf("upstream detail leaked: %s", recorder.Body.String())
 	}
 
-	saved := h.store.snapshot("course-test")
+	saved := h.store.snapshot("kb-test")
 	if saved.IngestStatus != api.IngestFailed {
 		t.Fatalf("ingest_status = %q", saved.IngestStatus)
 	}
@@ -879,16 +1015,18 @@ func TestAFailedRunLeavesARetryableDraft(t *testing.T) {
 
 func TestReingestReusesTheStoredSourceText(t *testing.T) {
 	h := newHarness(t,
-		withCourse(func(c *api.Course) {
-			c.IngestStatus = api.IngestFailed
-			c.IngestError = "The model did not answer in time."
+		withKB(func(k *api.KnowledgeBase) {
+			k.IngestStatus = api.IngestFailed
+			k.IngestError = "The pipeline did not answer in time."
 		}),
 		func(h *harness) {
-			h.runtime.result = api.IngestResult{Lessons: []api.Lesson{{Title: "recovered"}}}
+			h.runtime.result = api.IngestResult{
+				Sections: []api.Section{{Path: "a", Title: "recovered"}},
+			}
 		},
 	)
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/course-1/reingest", "")
+	recorder := do(h.handler, http.MethodPost, "/v1/knowledge-bases/kb-1/reingest", "")
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
@@ -897,21 +1035,21 @@ func TestReingestReusesTheStoredSourceText(t *testing.T) {
 	if len(started) != 1 {
 		t.Fatalf("started %d runs, want 1", len(started))
 	}
-	// The whole reason the draft is written before the model runs: a retry never asks
-	// the Specialist to find their files again.
+	// The whole reason the draft is written before the pipeline runs: a retry never asks
+	// the candidate to find their files again.
 	if started[0].SourceText != "the whole corpus" {
 		t.Fatalf("retry sent %q as the corpus", started[0].SourceText)
 	}
-	saved := h.store.snapshot("course-1")
+	saved := h.store.snapshot("kb-1")
 	if saved.IngestStatus != api.IngestReady || saved.IngestError != "" {
-		t.Fatalf("saved course = %+v", saved)
+		t.Fatalf("saved knowledge base = %+v", saved)
 	}
 }
 
 func TestReingestWithoutSourceMaterialIsAConflict(t *testing.T) {
-	h := newHarness(t, withCourse(func(c *api.Course) { c.SourceText = "" }))
+	h := newHarness(t, withKB(func(k *api.KnowledgeBase) { k.SourceText = "" }))
 
-	recorder := do(h.handler, http.MethodPost, "/v1/courses/course-1/reingest", "")
+	recorder := do(h.handler, http.MethodPost, "/v1/knowledge-bases/kb-1/reingest", "")
 
 	if recorder.Code != http.StatusConflict {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusConflict)
@@ -921,18 +1059,21 @@ func TestReingestWithoutSourceMaterialIsAConflict(t *testing.T) {
 	}
 }
 
-// The watcher runs on its own context so a closed tab cannot lose a finished course.
-// Reconcile is what covers the same case across a restart.
+// The watcher runs on its own context so a closed tab cannot lose a finished knowledge
+// base. Reconcile is what covers the same case across a restart.
 func TestReconcileReattachesToInFlightRuns(t *testing.T) {
 	fake := newFakeStore()
-	running := readyCourse("course-1", "user-dana")
+	running := readyKB("kb-1", "user-arun")
 	running.IngestStatus = api.IngestRunning
-	running.Lessons = nil
+	running.Sections = nil
 	fake.put(running)
 
-	runtime := &fakeRuntime{result: api.IngestResult{Lessons: []api.Lesson{{Title: "one"}}}}
-	ingestor := courses.NewIngestor(courses.IngestorOptions{
-		Repository: fake, Runtime: runtime, Logger: discardLogger(), MaxStream: 5 * time.Second,
+	runtime := &fakeRuntime{result: api.IngestResult{
+		Sections: []api.Section{{Path: "a", Title: "one"}},
+	}}
+	ingestor := kb.NewIngestor(kb.IngestorOptions{
+		Repository: fake, Runtime: runtime, Logger: discardLogger(),
+		MaxStream: 5 * time.Second,
 	})
 
 	if err := ingestor.Reconcile(context.Background()); err != nil {
@@ -941,12 +1082,12 @@ func TestReconcileReattachesToInFlightRuns(t *testing.T) {
 
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		if fake.snapshot("course-1").IngestStatus == api.IngestReady {
+		if fake.snapshot("kb-1").IngestStatus == api.IngestReady {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatalf("course was left in %q after reconcile", fake.snapshot("course-1").IngestStatus)
+	t.Fatalf("left in %q after reconcile", fake.snapshot("kb-1").IngestStatus)
 }
 
 func parseEvents(t *testing.T, body string) []api.IngestEvent {
@@ -966,18 +1107,18 @@ func parseEvents(t *testing.T, body string) []api.IngestEvent {
 	return events
 }
 
-// ── knowledge (retained from the reference application) ──────────────────────
+// ── vectors (retained from the reference application) ────────────────────────
 
-func TestKnowledgeUpsertReportsCount(t *testing.T) {
+func TestVectorUpsertReportsCount(t *testing.T) {
 	h := newHarness(t)
 
-	recorder := do(h.handler, http.MethodPost, "/v1/knowledge",
+	recorder := do(h.handler, http.MethodPost, "/v1/vectors",
 		`{"documents":[{"id":"a","title":"A","content":"body","source":"a"}]}`)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 	}
-	var response api.KnowledgeUpsertResponse
+	var response api.VectorUpsertResponse
 	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
@@ -989,7 +1130,7 @@ func TestKnowledgeUpsertReportsCount(t *testing.T) {
 func TestMalformedJSONIsRejectedBeforeAnyDependency(t *testing.T) {
 	h := newHarness(t)
 
-	recorder := do(h.handler, http.MethodPost, "/v1/knowledge", `{"documents":`)
+	recorder := do(h.handler, http.MethodPost, "/v1/vectors", `{"documents":`)
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
@@ -999,7 +1140,7 @@ func TestMalformedJSONIsRejectedBeforeAnyDependency(t *testing.T) {
 	}
 }
 
-func TestKnowledgeValidationRejectsBadDocuments(t *testing.T) {
+func TestVectorValidationRejectsBadDocuments(t *testing.T) {
 	cases := []struct{ name, body, want string }{
 		{name: "empty list", body: `{"documents":[]}`, want: "documents"},
 		{
@@ -1013,13 +1154,15 @@ func TestKnowledgeValidationRejectsBadDocuments(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			h := newHarness(t)
 
-			recorder := do(h.handler, http.MethodPost, "/v1/knowledge", testCase.body)
+			recorder := do(h.handler, http.MethodPost, "/v1/vectors", testCase.body)
 
 			if recorder.Code != http.StatusBadRequest {
 				t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 			}
 			if !strings.Contains(recorder.Body.String(), testCase.want) {
-				t.Fatalf("body = %s, want mention of %q", recorder.Body.String(), testCase.want)
+				t.Fatalf(
+					"body = %s, want mention of %q", recorder.Body.String(), testCase.want,
+				)
 			}
 			if h.knowledge.documents != nil {
 				t.Fatal("invalid request reached the vector store")
@@ -1033,7 +1176,7 @@ func TestUpstreamFailureIsABadGateway(t *testing.T) {
 		h.store.returnErr = errors.New("connection refused")
 	})
 
-	recorder := do(h.handler, http.MethodGet, "/v1/courses", "")
+	recorder := do(h.handler, http.MethodGet, "/v1/knowledge-bases", "")
 
 	if recorder.Code != http.StatusBadGateway {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadGateway)
@@ -1049,7 +1192,7 @@ func TestTimeoutIsAGatewayTimeout(t *testing.T) {
 		h.store.returnErr = context.DeadlineExceeded
 	})
 
-	recorder := do(h.handler, http.MethodGet, "/v1/courses", "")
+	recorder := do(h.handler, http.MethodGet, "/v1/knowledge-bases", "")
 
 	if recorder.Code != http.StatusGatewayTimeout {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusGatewayTimeout)

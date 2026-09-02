@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kpi-courses
+  name: reverse-interview
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kpi-courses-config
-  namespace: kpi-courses
+  name: reverse-interview-config
+  namespace: reverse-interview
 data:
   ENVIRONMENT: production
   # POC_UserJourney.md §0: one model for ingestion, and bigger/slower is fine.
@@ -18,14 +18,15 @@ data:
   # deployed by this manifest. See docs/deployment.md.
   TEMPORAL_ADDRESS: replace-with-temporal-host:7233
   TEMPORAL_NAMESPACE: replace-with-namespace
-  TEMPORAL_TASK_QUEUE: course-ingest
+  TEMPORAL_TASK_QUEUE: kb-ingest
   TEMPORAL_TLS: "true"
   # Bounds a whole ingestion run. Owned by the gateway because workflow code
   # cannot read the environment. Size it from a measured p99, not this default:
   # a run that trips it becomes a draft somebody has to retry.
   INGEST_TIMEOUT_MINUTES: "20"
-  MAX_LESSONS: "9"
-  MAX_POSITIONS: "8"
+  MAX_SECTIONS: "16"
+  MAX_CHIPS: "8"
+  MAX_QUIZ_ITEMS: "12"
   # The web app reaches the gateway over the cluster network. Deliberately not a
   # NEXT_PUBLIC_ variable: the gateway has no public ingress, and the header the
   # web app uses to say who is signed in is trusted.
@@ -36,17 +37,17 @@ data:
   CHROMA_HOST: replace-with-managed-chroma-host
   CHROMA_PORT: "443"
   CHROMA_SSL: "true"
-  CHROMA_COLLECTION: course_knowledge
+  CHROMA_COLLECTION: kb_sections_vectors
   EMBEDDING_MODEL: text-embedding-3-small
   LANGSMITH_TRACING: "true"
-  LANGSMITH_PROJECT: kpi-courses-production
+  LANGSMITH_PROJECT: reverse-interview-production
 ---
 # Replace this example with External Secrets, AWS Secrets Manager, or GCP Secret Manager.
 apiVersion: v1
 kind: Secret
 metadata:
-  name: kpi-courses-secrets
-  namespace: kpi-courses
+  name: reverse-interview-secrets
+  namespace: reverse-interview
 type: Opaque
 stringData:
   # Shared by the gateway (as API_KEY) and the web app (as GATEWAY_API_KEY).
@@ -54,7 +55,7 @@ stringData:
   GATEWAY_API_KEY: replace-me
   # Managed Postgres. The gateway applies its migrations at boot under an advisory
   # lock, so several replicas rolling at once is safe and no migration Job is needed.
-  DATABASE_URL: postgres://user:password@replace-with-managed-postgres:5432/courses?sslmode=require
+  DATABASE_URL: postgres://user:password@replace-with-managed-postgres:5432/kb?sslmode=require
   ANTHROPIC_API_KEY: replace-me
   OPENAI_API_KEY: replace-me
   LANGSMITH_API_KEY: replace-me
@@ -67,7 +68,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: worker
-  namespace: kpi-courses
+  namespace: reverse-interview
 spec:
   replicas: 2
   selector:
@@ -78,10 +79,10 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ghcr.io/your-org/kpi-courses-worker:latest
+          image: ghcr.io/your-org/reverse-interview-worker:latest
           envFrom:
-            - configMapRef: {name: kpi-courses-config}
-            - secretRef: {name: kpi-courses-secrets}
+            - configMapRef: {name: reverse-interview-config}
+            - secretRef: {name: reverse-interview-secrets}
           # A port check would prove nothing for a process that serves no HTTP.
           # This asserts the task queue actually has a live poller.
           readinessProbe:
@@ -106,7 +107,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gateway
-  namespace: kpi-courses
+  namespace: reverse-interview
 spec:
   replicas: 2
   selector:
@@ -118,16 +119,16 @@ spec:
       # An ingestion holds an SSE connection open for the length of the run, and a
       # gateway that goes away mid-stream leaves the browser without status lines.
       # The run itself is safe either way: the replacement pod re-attaches a
-      # completion watcher to every in-flight course at boot.
+      # completion watcher to every in-flight run at boot.
       terminationGracePeriodSeconds: 60
       containers:
         - name: gateway
-          image: ghcr.io/your-org/kpi-courses-gateway:latest
+          image: ghcr.io/your-org/reverse-interview-gateway:latest
           ports:
             - containerPort: 8080
           envFrom:
-            - configMapRef: {name: kpi-courses-config}
-            - secretRef: {name: kpi-courses-secrets}
+            - configMapRef: {name: reverse-interview-config}
+            - secretRef: {name: reverse-interview-secrets}
           # Readiness checks Temporal; liveness deliberately does not, so a
           # Temporal blip cannot cause a restart loop.
           readinessProbe:
@@ -144,14 +145,14 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
 ---
-# ClusterIP, not LoadBalancer. The gateway trusts the X-Specialist-Id header its
+# ClusterIP, not LoadBalancer. The gateway trusts the X-Candidate-Id header its
 # caller sends, so the web app must be its only client until real authentication
 # replaces that. See the README.
 apiVersion: v1
 kind: Service
 metadata:
   name: gateway
-  namespace: kpi-courses
+  namespace: reverse-interview
 spec:
   type: ClusterIP
   selector: {app: gateway}
@@ -163,7 +164,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web
-  namespace: kpi-courses
+  namespace: reverse-interview
 spec:
   replicas: 2
   selector:
@@ -174,18 +175,18 @@ spec:
     spec:
       containers:
         - name: web
-          image: ghcr.io/your-org/kpi-courses-web:latest
+          image: ghcr.io/your-org/reverse-interview-web:latest
           ports:
             - containerPort: 3000
           envFrom:
-            - configMapRef: {name: kpi-courses-config}
-            - secretRef: {name: kpi-courses-secrets}
+            - configMapRef: {name: reverse-interview-config}
+            - secretRef: {name: reverse-interview-secrets}
           readinessProbe:
             httpGet: {path: /studio, port: 3000}
           livenessProbe:
             httpGet: {path: /studio, port: 3000}
             initialDelaySeconds: 15
-          # PDF extraction happens here, in-process, on a Specialist's upload.
+          # PDF extraction happens here, in-process, on a candidate's upload.
           # This is the memory-hungriest thing the app does.
           resources:
             requests: {cpu: 200m, memory: 256Mi}
@@ -200,7 +201,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: web
-  namespace: kpi-courses
+  namespace: reverse-interview
 spec:
   type: LoadBalancer
   selector: {app: web}

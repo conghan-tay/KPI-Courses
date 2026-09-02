@@ -2,7 +2,7 @@
 
 The application is container-first. The Next web app, the Go gateway and the Python
 worker are stateless and can run on Kubernetes, Cloud Run/ECS-style container platforms,
-or a developer PaaS. Durable state lives in Postgres (courses) and Temporal (runs in
+or a developer PaaS. Durable state lives in Postgres (knowledge bases) and Temporal (runs in
 flight).
 
 For a worked end-to-end example on a single managed PaaS, see
@@ -14,7 +14,7 @@ For a worked end-to-end example on a single managed PaaS, see
 |---|---|---|
 | Containers | Cloud Run or GKE Autopilot | ECS Fargate or EKS |
 | Durable execution | Temporal Cloud (or self-hosted on GKE) | Temporal Cloud (or self-hosted on EKS) |
-| Courses | Cloud SQL for PostgreSQL | RDS for PostgreSQL |
+| Knowledge bases | Cloud SQL for PostgreSQL | RDS for PostgreSQL |
 | Distributed rate limit | Memorystore for Redis | ElastiCache for Redis |
 | Vector store (Journey 3) | Chroma Cloud or a persistent Chroma workload | Chroma Cloud or persistent ECS/EKS workload |
 | Secrets | Secret Manager | Secrets Manager |
@@ -25,8 +25,8 @@ containers, Temporal Cloud, Cloud SQL and Memorystore. Only the web app and the 
 should accept internet traffic, and the worker should accept none at all.
 
 Two systems hold state and both need backing up, for different reasons. **Postgres** holds
-the courses; losing it loses the product. **Temporal** holds runs in flight and the audit
-trail of how each course was built; losing it strands any ingestion that was mid-flight,
+the knowledge bases; losing it loses the product. **Temporal** holds runs in flight and the audit
+trail of how each knowledge base was built; losing it strands any ingestion that was mid-flight,
 which the gateway's boot reconciler cannot recover from because there is no longer a run
 to re-attach to.
 
@@ -48,19 +48,19 @@ Either option works; pick before you size anything else.
 
 Set a retention period on the namespace. A closed ingestion history is the record of
 which sources produced which positions, and that is the first thing anyone will want when
-a Specialist says "I never said that" — so retention is a product decision, not only a
+a candidate says "I never said that" — so retention is a product decision, not only a
 storage one.
 
 `INGEST_TIMEOUT_MINUTES` bounds a whole run. It is owned by the gateway because workflow
 code cannot read the environment, so it travels as a `StartWorkflowOptions` field. Size it
 above the slowest realistic corpus: a run that trips it becomes a failed draft the
-Specialist has to retry, and retrying a nine-lesson ingestion is not free.
+candidate has to retry, and retrying a fourteen-section ingestion is not free.
 
 ## Scaling
 
 The gateway scales on request concurrency, as any HTTP service does — with one caveat: an
 ingestion holds an SSE connection open for the length of the run, so concurrency here is
-"Specialists mid-ingestion", not "requests per second". Size connection limits and any
+"candidates mid-ingestion", not "requests per second". Size connection limits and any
 proxy idle timeout accordingly; the gateway itself sets no `WriteTimeout` for exactly this
 reason.
 
@@ -74,13 +74,13 @@ state, and every node is a pure function of the workflow state passed into it.
 ## The cross-language contract
 
 The Go structs in `internal/api/types.go`, the Pydantic models in
-`app/core/course_schemas.py` and the zod schemas in `services/web/lib/types.ts` describe
+`app/core/kb_schemas.py` and the zod schemas in `services/web/lib/types.ts` describe
 the same JSON, and nothing enforces that at build time. A renamed field surfaces as a
 workflow task failure or a client-side parse error at runtime. **Deploy the three services
 together**, and treat a change to any one of those files as a change to all three.
 
-The same applies to the workflow and query names in `internal/courses/runtime.go` and
-`app/temporal/course_workflow.py`: the gateway addresses the worker by string.
+The same applies to the workflow and query names in `internal/kb/runtime.go` and
+`app/temporal/kb_workflow.py`: the gateway addresses the worker by string.
 
 `make test-e2e` is what catches a drift, and it is worth running against a staging
 environment rather than only in CI.
@@ -111,11 +111,11 @@ Temporal blip cannot cause a restart loop.
 - Place OAuth/JWT validation at the web app and pass a verified subject to the gateway.
 - Run unit, race, E2E, and dependency/security scans.
 - Confirm the three schema files still agree; run `make test-e2e` against staging.
-- Take a Postgres backup and verify a restore before the first real Specialist signs up.
+- Take a Postgres backup and verify a restore before the first real candidate signs up.
 - Enable LangSmith tracing with a production project and sampling/redaction policy.
 - Set Temporal namespace retention, alerts on task-queue backlog, and latency/error SLOs.
 - Load-test with the chosen model because model latency controls overall concurrency.
-- **Replace the trusted `X-Specialist-Id` header with real authentication.** Anything
+- **Replace the trusted `X-Candidate-Id` header with real authentication.** Anything
   holding the gateway's API key can currently act as any seeded user.
 - Set `INGEST_TIMEOUT_MINUTES` from a measured p99 of real corpora, not the default.
 - Confirm `MODEL_PROVIDER` is not `fake` — the worker refuses it in production, but the

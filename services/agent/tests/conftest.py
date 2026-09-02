@@ -7,13 +7,13 @@ import pytest
 import pytest_asyncio
 from app.core.ingest_model import FixtureIngestionModel
 from app.core.settings import Settings, get_settings
-from app.graph.ingest import IngestNodes, build_ingest_graph
-from app.graph.soften import SoftenNodes, build_soften_graph
-from app.temporal.course_workflow import (
+from app.graph.ingest import SOURCE_HEADER, IngestNodes, build_ingest_graph
+from app.graph.rephrase import RephraseNodes, build_rephrase_graph
+from app.temporal.kb_workflow import (
     INGEST_GRAPH,
-    SOFTEN_GRAPH,
-    CourseIngestionWorkflow,
-    SoftenClaimWorkflow,
+    REPHRASE_GRAPH,
+    KnowledgeBaseIngestionWorkflow,
+    RephraseChipWorkflow,
 )
 from temporalio.client import Client
 from temporalio.contrib.langgraph import LangGraphPlugin
@@ -21,12 +21,24 @@ from temporalio.contrib.pydantic import pydantic_data_converter
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Worker
 
-TASK_QUEUE = "course-ingest-test"
+TASK_QUEUE = "kb-ingest-test"
 
 # The tests read the real fixture rather than a hand-made stand-in. That is the point:
-# assertion A2 is "every quote appears verbatim in source.md", and a fake source file
-# would make it pass while proving nothing.
+# assertion B2 is "every reference resolves to a section that exists", and a fake
+# knowledge base would make it pass while proving nothing.
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "docs" / "productDocs" / "fixtures"
+
+# The seven documents that make up the reference corpus, in the order the dropzone sends
+# them. resume.md is first because its frontmatter is what autofills the form.
+FIXTURE_FILES = [
+    "resume.md",
+    "agoda-supplier-payouts.md",
+    "agoda-psp-routing.md",
+    "agoda-reconciliation.md",
+    "postgres-notes.md",
+    "nodusart-advisory.md",
+    "career-notes.md",
+]
 
 
 @pytest.fixture
@@ -56,10 +68,23 @@ def expected() -> dict[str, Any]:
 
 
 @pytest.fixture(scope="session")
-def source_text() -> str:
-    """docs/productDocs/fixtures/source.md — the corpus every quote must be found in."""
+def source_files() -> list[str]:
+    return list(FIXTURE_FILES)
 
-    return (FIXTURE_DIR / "source.md").read_text(encoding="utf-8")
+
+@pytest.fixture(scope="session")
+def source_text() -> str:
+    """The seven fixture documents, concatenated the way the web app concatenates them.
+
+    joinCorpus in services/web/lib/extract.ts writes this exact header before each
+    upload, and `split_corpus` splits on it — so building the corpus here the same way
+    is what makes the read loop run seven times in a test rather than once.
+    """
+
+    return "\n\n---\n\n".join(
+        f"{SOURCE_HEADER}{name}\n\n{(FIXTURE_DIR / name).read_text(encoding='utf-8')}"
+        for name in FIXTURE_FILES
+    )
 
 
 @pytest.fixture
@@ -97,12 +122,12 @@ async def ingest_worker(
     async with Worker(
         temporal_env.client,
         task_queue=TASK_QUEUE,
-        workflows=[CourseIngestionWorkflow, SoftenClaimWorkflow],
+        workflows=[KnowledgeBaseIngestionWorkflow, RephraseChipWorkflow],
         plugins=[
             LangGraphPlugin(
                 graphs={
                     INGEST_GRAPH: build_ingest_graph(nodes),
-                    SOFTEN_GRAPH: build_soften_graph(SoftenNodes(model)),
+                    REPHRASE_GRAPH: build_rephrase_graph(RephraseNodes(model)),
                 }
             )
         ],

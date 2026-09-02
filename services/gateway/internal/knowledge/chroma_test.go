@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/example/kpi-courses/services/gateway/internal/api"
+	"github.com/example/reverse-interview/services/gateway/internal/api"
 )
 
 type stubEmbedder struct {

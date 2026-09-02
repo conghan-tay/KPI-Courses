@@ -2,8 +2,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * DESIGN.md §4.14 — empty states are a bordered box on halftone with one title
- * line and one action. Copy is blunt, never apologetic: "No courses yet. Make
- * one."
+ * line and one action. Copy is blunt, never apologetic: "Nothing here yet. Build one."
  *
  * The words never sit directly on the halftone. The dots are 30% black and they
  * destroy small type, so the ground stays a ground and the copy floats in a

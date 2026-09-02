@@ -17,11 +17,11 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.temporal.io/sdk/client"
 
-	"github.com/example/kpi-courses/services/gateway/internal/config"
-	"github.com/example/kpi-courses/services/gateway/internal/courses"
-	"github.com/example/kpi-courses/services/gateway/internal/httpapi"
-	"github.com/example/kpi-courses/services/gateway/internal/knowledge"
-	"github.com/example/kpi-courses/services/gateway/internal/store"
+	"github.com/example/reverse-interview/services/gateway/internal/config"
+	"github.com/example/reverse-interview/services/gateway/internal/httpapi"
+	"github.com/example/reverse-interview/services/gateway/internal/kb"
+	"github.com/example/reverse-interview/services/gateway/internal/knowledge"
+	"github.com/example/reverse-interview/services/gateway/internal/store"
 )
 
 const shutdownGrace = 20 * time.Second
@@ -112,10 +112,10 @@ func run(logger *slog.Logger) error {
 	redisClient := redis.NewClient(redisOptions)
 	defer redisClient.Close()
 
-	runtime := courses.NewTemporalRuntime(
+	runtime := kb.NewTemporalRuntime(
 		temporalClient, cfg.TemporalTaskQueue, cfg.IngestTimeout,
 	)
-	ingestor := courses.NewIngestor(courses.IngestorOptions{
+	ingestor := kb.NewIngestor(kb.IngestorOptions{
 		Repository: repository,
 		Runtime:    runtime,
 		Logger:     logger,
@@ -124,7 +124,7 @@ func run(logger *slog.Logger) error {
 		MaxStream: cfg.IngestTimeout + time.Minute,
 	})
 	// A crash or a deploy mid-ingestion leaves drafts in "running" with nobody waiting
-	// on them. Re-attach before serving, so the studio is never lying about a course.
+	// on them. Re-attach before serving, so the studio is never lying about a knowledge base.
 	if err := ingestor.Reconcile(startupCtx); err != nil {
 		logger.Warn("could not re-attach to in-flight ingestions", "error", err)
 	}

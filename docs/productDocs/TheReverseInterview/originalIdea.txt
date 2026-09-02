@@ -10,3 +10,6 @@ After payment, 2 options will be presented to them. Continue the chat. Or make a
 IF they chose Make an appointment with Me , they will first have to answer 4 questions about me and get them correct. Unlimited retries, multiple choice. 
 They can choose their time on a calendar and authorize the charge of a fee on their card. My fees for an interview will be 20usd for 20 minutes, or right now a promotional discount rate of 40 usd for an hour.
 Once I received the request and approve it via email, I will receive the payment and send them an invite for a meeting with google meets link.
+The point of this application is not to create a strict and formal representation of the candidate. But a much richer representation than a resume or Linkedin profile can provide. 
+An Ai agent represents the candidate and have it tell the candidate's story to every company without the candidate constantly repeating himself. 
+What the candidate have actually done, what they are good at, their motivations, what they want from their next role. Where a candidate can be really understood.

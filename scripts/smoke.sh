@@ -8,7 +8,7 @@ set -eu
 
 base_url="${GATEWAY_URL:-http://localhost:8080}"
 api_key="${API_KEY:-local-api-key}"
-source_file="${SOURCE_FILE:-docs/productDocs/fixtures/source.md}"
+fixtures="${FIXTURE_DIR:-docs/productDocs/fixtures}"
 
 curl --fail --silent --show-error "$base_url/healthz"
 echo
@@ -16,15 +16,29 @@ echo
 # The gateway takes text, not files: turning an upload into text is the web app's
 # job (services/web/lib/extract.ts). The "# SOURCE FILE:" header is what the
 # graph splits the corpus back apart on.
-python3 - "$source_file" > /tmp/ingest-request.json <<'PY'
-import json, sys
-body = open(sys.argv[1], encoding="utf-8").read()
+python3 - "$fixtures" > /tmp/ingest-request.json <<'PY'
+import json, os, sys
+
+fixtures = sys.argv[1]
+names = [
+    "resume.md",
+    "agoda-supplier-payouts.md",
+    "agoda-psp-routing.md",
+    "agoda-reconciliation.md",
+    "postgres-notes.md",
+    "nodusart-advisory.md",
+    "career-notes.md",
+]
+parts = []
+for name in names:
+    with open(os.path.join(fixtures, name), encoding="utf-8") as handle:
+        parts.append(f"# SOURCE FILE: {name}\n\n{handle.read()}")
+
 json.dump({
-    "title": "Smoke Test Course",
-    "tagline": "The deal is won or lost long before anyone says a price.",
-    "price_cents": 34900,
-    "source_text": f"# SOURCE FILE: source.md\n\n{body}",
-    "source_files": ["source.md"],
+    "title": "Smoke Test Candidate",
+    "tagline": "Payments engineer. Eleven years, four employers, one gap.",
+    "source_text": "\n\n---\n\n".join(parts),
+    "source_files": names,
 }, sys.stdout)
 PY
 
@@ -32,7 +46,7 @@ PY
 # whole point of the endpoint.
 curl --fail --silent --show-error --no-buffer \
   -H "X-API-Key: $api_key" \
-  -H "X-Specialist-Id: user-dana" \
+  -H "X-Candidate-Id: user-arun" \
   -H "Content-Type: application/json" \
   --data @/tmp/ingest-request.json \
-  "$base_url/v1/courses/ingest"
+  "$base_url/v1/knowledge-bases/ingest"

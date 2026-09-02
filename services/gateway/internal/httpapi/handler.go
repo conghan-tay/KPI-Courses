@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/example/kpi-courses/services/gateway/internal/api"
-	"github.com/example/kpi-courses/services/gateway/internal/courses"
-	"github.com/example/kpi-courses/services/gateway/internal/knowledge"
-	"github.com/example/kpi-courses/services/gateway/internal/store"
+	"github.com/example/reverse-interview/services/gateway/internal/api"
+	"github.com/example/reverse-interview/services/gateway/internal/kb"
+	"github.com/example/reverse-interview/services/gateway/internal/knowledge"
+	"github.com/example/reverse-interview/services/gateway/internal/store"
 )
 
 // maxRequestBytes bounds an ordinary JSON body. Ingestion is the exception: a corpus is
@@ -27,7 +27,7 @@ const (
 	maxIngestBytes  = 8 << 20
 )
 
-// specialistHeader carries the identity of the caller.
+// candidateHeader carries the identity of the caller.
 //
 // The gateway trusts it because the API key gates this hop and the only caller is the
 // web app's route handlers, which resolve it from a signed-in cookie. That is exactly
@@ -35,7 +35,7 @@ const (
 // problem" — which is to say, not strong at all. Anything holding this API key can act
 // as any seeded user. Replacing this with a real token is the first thing to do before
 // this service meets a real user.
-const specialistHeader = "X-Specialist-Id"
+const candidateHeader = "X-Candidate-Id"
 
 // HealthChecker reports whether the agent runtime is reachable. Implemented by the
 // Temporal client; kept as an interface so tests need no Temporal server.
@@ -49,8 +49,8 @@ type HealthChecker interface {
 type Handler struct {
 	apiKey     string
 	repository store.Repository
-	ingestor   *courses.Ingestor
-	runtime    courses.Runtime
+	ingestor   *kb.Ingestor
+	runtime    kb.Runtime
 	knowledge  knowledge.Repository
 	health     HealthChecker
 	limiter    RateLimiter
@@ -63,8 +63,8 @@ type Handler struct {
 type Options struct {
 	APIKey     string
 	Repository store.Repository
-	Ingestor   *courses.Ingestor
-	Runtime    courses.Runtime
+	Ingestor   *kb.Ingestor
+	Runtime    kb.Runtime
 	Knowledge  knowledge.Repository
 	Health     HealthChecker
 	Limiter    RateLimiter
@@ -91,17 +91,18 @@ func New(options Options) http.Handler {
 	mux.HandleFunc("GET /healthz", h.healthz)
 	mux.HandleFunc("GET /readyz", h.readyz)
 
-	mux.HandleFunc("GET /v1/courses", h.listCourses)
-	mux.HandleFunc("POST /v1/courses/ingest", h.ingestCourse)
-	mux.HandleFunc("GET /v1/courses/{courseID}", h.getCourse)
-	mux.HandleFunc("PATCH /v1/courses/{courseID}", h.patchCourse)
-	mux.HandleFunc("POST /v1/courses/{courseID}/publish", h.publishCourse)
-	mux.HandleFunc("POST /v1/courses/{courseID}/reingest", h.reingestCourse)
-	mux.HandleFunc("POST /v1/courses/{courseID}/positions/{index}/soften", h.softenPosition)
+	mux.HandleFunc("GET /v1/knowledge-bases", h.listKnowledgeBases)
+	mux.HandleFunc("POST /v1/knowledge-bases/ingest", h.ingestKnowledgeBase)
+	mux.HandleFunc("GET /v1/knowledge-bases/{kbID}", h.getKnowledgeBase)
+	mux.HandleFunc("PATCH /v1/knowledge-bases/{kbID}", h.patchKnowledgeBase)
+	mux.HandleFunc("POST /v1/knowledge-bases/{kbID}/publish", h.publishKnowledgeBase)
+	mux.HandleFunc("POST /v1/knowledge-bases/{kbID}/reingest", h.reingestKnowledgeBase)
+	mux.HandleFunc("POST /v1/knowledge-bases/{kbID}/chips/{index}/rephrase", h.rephraseChip)
 
 	// Retained from the reference application. Nothing reads these vectors yet;
-	// Journey 3's tutor is the caller they exist for.
-	mux.HandleFunc("POST /v1/knowledge", h.upsertKnowledge)
+	// Journey 2's hour-long chat is the caller they exist for. Named /v1/vectors rather
+	// than /v1/knowledge so it does not read as a sibling of /v1/knowledge-bases.
+	mux.HandleFunc("POST /v1/vectors", h.upsertVectors)
 	return h.requestContext(h.authenticate(mux))
 }
 
@@ -129,10 +130,10 @@ func (h *Handler) readyz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// upsertKnowledge writes straight to the vector store. It stays synchronous because
+// upsertVectors writes straight to the vector store. It stays synchronous because
 // seeding is a short, idempotent operation whose result the caller wants.
-func (h *Handler) upsertKnowledge(w http.ResponseWriter, r *http.Request) {
-	var request api.KnowledgeUpsertRequest
+func (h *Handler) upsertVectors(w http.ResponseWriter, r *http.Request) {
+	var request api.VectorUpsertRequest
 	if !h.decode(w, r, &request, maxRequestBytes) {
 		return
 	}
@@ -149,13 +150,13 @@ func (h *Handler) upsertKnowledge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.logCompleted(r, http.StatusOK, "")
-	writeJSON(w, http.StatusOK, api.KnowledgeUpsertResponse{Upserted: upserted})
+	writeJSON(w, http.StatusOK, api.VectorUpsertResponse{Upserted: upserted})
 }
 
-// specialist resolves the caller, writing the error response itself. It returns false
+// candidate resolves the caller, writing the error response itself. It returns false
 // when the caller should stop.
-func (h *Handler) specialist(w http.ResponseWriter, r *http.Request) (api.User, bool) {
-	id := r.Header.Get(specialistHeader)
+func (h *Handler) candidate(w http.ResponseWriter, r *http.Request) (api.User, bool) {
+	id := r.Header.Get(candidateHeader)
 	if !validPathID(id) {
 		writeError(w, http.StatusUnauthorized, "unknown_user", "Sign in first.")
 		return api.User{}, false
@@ -213,13 +214,13 @@ func (h *Handler) writeServiceError(w http.ResponseWriter, r *http.Request, err 
 			map[string]string{validation.Field: validation.Message}, nil,
 		)
 	case errors.Is(err, store.ErrNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "No such course.")
+		writeError(w, http.StatusNotFound, "not_found", "No such knowledge base.")
 	case errors.Is(err, store.ErrUnknownUser):
 		writeError(w, http.StatusUnauthorized, "unknown_user", "Sign in first.")
-	case errors.Is(err, courses.ErrAlreadyRunning):
+	case errors.Is(err, kb.ErrAlreadyRunning):
 		writeError(
 			w, http.StatusConflict, "already_running",
-			"That course is already being built. Wait for it to finish.",
+			"That knowledge base is already being built. Wait for it to finish.",
 		)
 	case errors.Is(err, context.DeadlineExceeded):
 		h.logFailure(r, err)
@@ -243,14 +244,14 @@ func (h *Handler) logFailure(r *http.Request, err error) {
 	)
 }
 
-func (h *Handler) logCompleted(r *http.Request, status int, courseID string) {
+func (h *Handler) logCompleted(r *http.Request, status int, kbID string) {
 	h.logger.Info(
 		"gateway request completed",
 		"request_id", requestIDFrom(r.Context()),
 		"method", r.Method,
 		"path", r.URL.Path,
 		"status", status,
-		"course_id", courseID,
+		"kb_id", kbID,
 	)
 }
 

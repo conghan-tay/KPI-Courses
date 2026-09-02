@@ -1,7 +1,7 @@
 [project]
-name = "kpi-courses-agent"
+name = "reverse-interview-agent"
 version = "0.1.0"
-description = "LangGraph course-ingestion pipeline for the chat-native tutoring POC"
+description = "LangGraph kb-ingestion pipeline for the chat-native tutoring POC"
 requires-python = ">=3.13,<3.15"
 dependencies = [
   "langchain==1.3.15",
@@ -36,7 +36,7 @@ dev = [
 asyncio_mode = "auto"
 testpaths = ["services/agent/tests", "tests/e2e"]
 pythonpath = ["services/agent"]
-# `voice_card.register` is named by POC_UserJourney.md and carried by the fixture, and
+# `Chip.register` is named by chips_example_prompt.txt and carried by the fixture, and
 # pydantic notices it shadows a BaseModel attribute. Renaming the field would break the
 # contract with the Go structs and the zod schemas; the shadowing is harmless.
 filterwarnings = [

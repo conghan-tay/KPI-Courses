@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/example/kpi-courses/services/gateway/internal/api"
+	"github.com/example/reverse-interview/services/gateway/internal/api"
 )
 
 // querier is the read overlap between a pool and a transaction, so the helpers below
@@ -20,11 +20,11 @@ type querier interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-const courseColumns = `
-	c.id, c.specialist_id, u.name, u.bio, c.slug, c.title, c.tagline,
-	c.price_cents, c.status, c.ingest_status, c.ingest_error,
-	c.voice_card, c.positions, c.source_text, c.source_files,
-	c.created_at, c.updated_at`
+const kbColumns = `
+	k.id, k.candidate_id, u.name, u.bio, k.slug, k.title, k.tagline,
+	k.status, k.ingest_status, k.ingest_error,
+	k.pre_roll, k.chips, k.quiz, k.source_text, k.source_files,
+	k.created_at, k.updated_at`
 
 // PostgresRepository is the production Repository.
 type PostgresRepository struct {
@@ -36,172 +36,181 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 func (r *PostgresRepository) List(
-	ctx context.Context, specialistID string,
-) ([]api.Course, error) {
+	ctx context.Context, candidateID string,
+) ([]api.KnowledgeBase, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT `+courseColumns+`
-		FROM courses c JOIN users u ON u.id = c.specialist_id
-		WHERE c.specialist_id = $1
-		ORDER BY c.created_at DESC`, specialistID)
+		SELECT `+kbColumns+`
+		FROM knowledge_bases k JOIN users u ON u.id = k.candidate_id
+		WHERE k.candidate_id = $1
+		ORDER BY k.created_at DESC`, candidateID)
 	if err != nil {
-		return nil, fmt.Errorf("list courses: %w", err)
+		return nil, fmt.Errorf("list knowledge bases: %w", err)
 	}
-	courses, err := scanCourses(rows)
-	if err != nil {
-		return nil, err
-	}
-	if len(courses) == 0 {
-		return courses, nil
-	}
-
-	// One query for every lesson in the list rather than one per course: the studio page
-	// only needs a count today, but Journey 2's catalog will want the objectives, and
-	// an N+1 that only shows up at ten courses is the kind that ships.
-	ids := make([]string, 0, len(courses))
-	for _, course := range courses {
-		ids = append(ids, course.ID)
-	}
-	byCourse, err := r.lessonsFor(ctx, r.pool, ids)
+	stored, err := scanKnowledgeBases(rows)
 	if err != nil {
 		return nil, err
 	}
-	for index := range courses {
-		courses[index].Lessons = byCourse[courses[index].ID]
-		courses[index].Normalize()
+	if len(stored) == 0 {
+		return stored, nil
 	}
-	return courses, nil
+
+	// One query for every section in the list rather than one per knowledge base: the
+	// studio page only needs a count today, but Journey 2 will want the summaries, and
+	// an N+1 that only shows up at ten rows is the kind that ships.
+	ids := make([]string, 0, len(stored))
+	for _, knowledgeBase := range stored {
+		ids = append(ids, knowledgeBase.ID)
+	}
+	byKB, err := r.sectionsFor(ctx, r.pool, ids)
+	if err != nil {
+		return nil, err
+	}
+	for index := range stored {
+		stored[index].Sections = byKB[stored[index].ID]
+		stored[index].Normalize()
+	}
+	return stored, nil
 }
 
-func (r *PostgresRepository) Get(ctx context.Context, id string) (api.Course, error) {
-	return r.getBy(ctx, r.pool, "c.id = $1", id, false)
+func (r *PostgresRepository) Get(ctx context.Context, id string) (api.KnowledgeBase, error) {
+	return r.getBy(ctx, r.pool, "k.id = $1", id, false)
 }
 
-func (r *PostgresRepository) GetBySlug(ctx context.Context, slug string) (api.Course, error) {
-	return r.getBy(ctx, r.pool, "c.slug = $1", slug, false)
+func (r *PostgresRepository) GetBySlug(
+	ctx context.Context, slug string,
+) (api.KnowledgeBase, error) {
+	return r.getBy(ctx, r.pool, "k.slug = $1", slug, false)
 }
 
 func (r *PostgresRepository) getBy(
 	ctx context.Context, q querier, where, value string, forUpdate bool,
-) (api.Course, error) {
-	// FOR UPDATE OF c: the join to users must not be locked too, or two ingests by the
-	// same Specialist would serialise on their user row.
+) (api.KnowledgeBase, error) {
+	// FOR UPDATE OF k: the join to users must not be locked too, or two ingests by the
+	// same candidate would serialise on their user row.
 	lock := ""
 	if forUpdate {
-		lock = " FOR UPDATE OF c"
+		lock = " FOR UPDATE OF k"
 	}
 	row := q.QueryRow(ctx, `
-		SELECT `+courseColumns+`
-		FROM courses c JOIN users u ON u.id = c.specialist_id
+		SELECT `+kbColumns+`
+		FROM knowledge_bases k JOIN users u ON u.id = k.candidate_id
 		WHERE `+where+lock, value)
 
-	course, err := scanCourse(row)
+	knowledgeBase, err := scanKnowledgeBase(row)
 	if err != nil {
-		return api.Course{}, err
+		return api.KnowledgeBase{}, err
 	}
-	byCourse, err := r.lessonsFor(ctx, q, []string{course.ID})
+	byKB, err := r.sectionsFor(ctx, q, []string{knowledgeBase.ID})
 	if err != nil {
-		return api.Course{}, err
+		return api.KnowledgeBase{}, err
 	}
-	course.Lessons = byCourse[course.ID]
-	course.Normalize()
-	return course, nil
+	knowledgeBase.Sections = byKB[knowledgeBase.ID]
+	knowledgeBase.Normalize()
+	return knowledgeBase, nil
 }
 
 func (r *PostgresRepository) Create(
-	ctx context.Context, course api.Course,
-) (api.Course, error) {
+	ctx context.Context, knowledgeBase api.KnowledgeBase,
+) (api.KnowledgeBase, error) {
 	transaction, err := r.pool.Begin(ctx)
 	if err != nil {
-		return api.Course{}, fmt.Errorf("begin create: %w", err)
+		return api.KnowledgeBase{}, fmt.Errorf("begin create: %w", err)
 	}
 	defer func() { _ = transaction.Rollback(ctx) }()
 
-	slug, err := uniqueSlug(ctx, transaction, course.Slug)
+	slug, err := uniqueSlug(ctx, transaction, knowledgeBase.Slug)
 	if err != nil {
-		return api.Course{}, err
+		return api.KnowledgeBase{}, err
 	}
-	course.Slug = slug
-	course.Normalize()
+	knowledgeBase.Slug = slug
+	knowledgeBase.Normalize()
 
-	voiceCard, positions, sourceFiles, err := encodeDocuments(course)
+	encoded, err := encodeDocuments(knowledgeBase)
 	if err != nil {
-		return api.Course{}, err
+		return api.KnowledgeBase{}, err
 	}
-	createdAt, updatedAt := parseTimestamp(course.CreatedAt), parseTimestamp(course.UpdatedAt)
+	createdAt := parseTimestamp(knowledgeBase.CreatedAt)
+	updatedAt := parseTimestamp(knowledgeBase.UpdatedAt)
 
 	if _, err := transaction.Exec(ctx, `
-		INSERT INTO courses (
-			id, specialist_id, slug, title, tagline, price_cents, status,
-			ingest_status, ingest_error, voice_card, positions, source_text,
+		INSERT INTO knowledge_bases (
+			id, candidate_id, slug, title, tagline, status,
+			ingest_status, ingest_error, pre_roll, chips, quiz, source_text,
 			source_files, created_at, updated_at
 		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-		course.ID, course.SpecialistID, course.Slug, course.Title, course.Tagline,
-		course.PriceCents, course.Status, course.IngestStatus, course.IngestError,
-		voiceCard, positions, course.SourceText, sourceFiles, createdAt, updatedAt,
+		knowledgeBase.ID, knowledgeBase.CandidateID, knowledgeBase.Slug,
+		knowledgeBase.Title, knowledgeBase.Tagline, knowledgeBase.Status,
+		knowledgeBase.IngestStatus, knowledgeBase.IngestError,
+		encoded.preRoll, encoded.chips, encoded.quiz,
+		knowledgeBase.SourceText, encoded.sourceFiles, createdAt, updatedAt,
 	); err != nil {
-		return api.Course{}, fmt.Errorf("insert course: %w", err)
+		return api.KnowledgeBase{}, fmt.Errorf("insert knowledge base: %w", err)
 	}
-	if err := replaceLessons(ctx, transaction, course.ID, course.Lessons); err != nil {
-		return api.Course{}, err
+	if err := replaceSections(
+		ctx, transaction, knowledgeBase.ID, knowledgeBase.Sections,
+	); err != nil {
+		return api.KnowledgeBase{}, err
 	}
 	if err := transaction.Commit(ctx); err != nil {
-		return api.Course{}, fmt.Errorf("commit create: %w", err)
+		return api.KnowledgeBase{}, fmt.Errorf("commit create: %w", err)
 	}
-	return course, nil
+	return knowledgeBase, nil
 }
 
 func (r *PostgresRepository) Update(
-	ctx context.Context, id string, mutate func(api.Course) api.Course,
-) (api.Course, error) {
+	ctx context.Context, id string, mutate func(api.KnowledgeBase) api.KnowledgeBase,
+) (api.KnowledgeBase, error) {
 	transaction, err := r.pool.Begin(ctx)
 	if err != nil {
-		return api.Course{}, fmt.Errorf("begin update: %w", err)
+		return api.KnowledgeBase{}, fmt.Errorf("begin update: %w", err)
 	}
 	defer func() { _ = transaction.Rollback(ctx) }()
 
-	current, err := r.getBy(ctx, transaction, "c.id = $1", id, true)
+	current, err := r.getBy(ctx, transaction, "k.id = $1", id, true)
 	if err != nil {
-		return api.Course{}, err
+		return api.KnowledgeBase{}, err
 	}
 
 	updated := mutate(current)
 	// The identity and the creation time are the store's, not the caller's: a mutate
 	// that returns a different id would otherwise silently rewrite a different row.
 	updated.ID = current.ID
-	updated.SpecialistID = current.SpecialistID
+	updated.CandidateID = current.CandidateID
 	updated.CreatedAt = current.CreatedAt
 	updated.UpdatedAt = api.Timestamp(time.Now())
 	updated.Normalize()
 
-	voiceCard, positions, sourceFiles, err := encodeDocuments(updated)
+	encoded, err := encodeDocuments(updated)
 	if err != nil {
-		return api.Course{}, err
+		return api.KnowledgeBase{}, err
 	}
 
 	if _, err := transaction.Exec(ctx, `
-		UPDATE courses SET
-			slug = $2, title = $3, tagline = $4, price_cents = $5, status = $6,
-			ingest_status = $7, ingest_error = $8, voice_card = $9, positions = $10,
-			source_text = $11, source_files = $12, updated_at = $13
+		UPDATE knowledge_bases SET
+			slug = $2, title = $3, tagline = $4, status = $5,
+			ingest_status = $6, ingest_error = $7, pre_roll = $8, chips = $9,
+			quiz = $10, source_text = $11, source_files = $12, updated_at = $13
 		WHERE id = $1`,
-		updated.ID, updated.Slug, updated.Title, updated.Tagline, updated.PriceCents,
-		updated.Status, updated.IngestStatus, updated.IngestError, voiceCard, positions,
-		updated.SourceText, sourceFiles, parseTimestamp(updated.UpdatedAt),
+		updated.ID, updated.Slug, updated.Title, updated.Tagline, updated.Status,
+		updated.IngestStatus, updated.IngestError, encoded.preRoll, encoded.chips,
+		encoded.quiz, updated.SourceText, encoded.sourceFiles,
+		parseTimestamp(updated.UpdatedAt),
 	); err != nil {
-		return api.Course{}, fmt.Errorf("update course: %w", err)
+		return api.KnowledgeBase{}, fmt.Errorf("update knowledge base: %w", err)
 	}
-	if err := replaceLessons(ctx, transaction, updated.ID, updated.Lessons); err != nil {
-		return api.Course{}, err
+	if err := replaceSections(ctx, transaction, updated.ID, updated.Sections); err != nil {
+		return api.KnowledgeBase{}, err
 	}
 	if err := transaction.Commit(ctx); err != nil {
-		return api.Course{}, fmt.Errorf("commit update: %w", err)
+		return api.KnowledgeBase{}, fmt.Errorf("commit update: %w", err)
 	}
 	return updated, nil
 }
 
 func (r *PostgresRepository) ListRunning(ctx context.Context) ([]string, error) {
 	rows, err := r.pool.Query(
-		ctx, "SELECT id FROM courses WHERE ingest_status = 'running' ORDER BY created_at",
+		ctx,
+		"SELECT id FROM knowledge_bases WHERE ingest_status = 'running' ORDER BY created_at",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("list running ingestions: %w", err)
@@ -233,82 +242,86 @@ func (r *PostgresRepository) User(ctx context.Context, id string) (api.User, err
 	return user, nil
 }
 
-// replaceLessons rewrites a course's whole lesson list.
+// replaceSections rewrites a knowledge base's whole section list.
 //
-// Delete-then-insert rather than a diff: reordering is the common edit, and moving
-// lesson 3 to position 1 through in-place UPDATEs collides with UNIQUE (course_id, ord)
-// halfway through. Courses are 5–9 lessons, so the cost of rewriting them all is
+// Delete-then-insert rather than a diff: reordering is a common edit, and moving section
+// 3 to position 1 through in-place UPDATEs collides with UNIQUE (kb_id, ord) halfway
+// through. A knowledge base is 8–16 sections, so the cost of rewriting them all is
 // nothing next to the cost of getting that dance wrong.
-func replaceLessons(
-	ctx context.Context, transaction pgx.Tx, courseID string, lessons []api.Lesson,
+func replaceSections(
+	ctx context.Context, transaction pgx.Tx, kbID string, sections []api.Section,
 ) error {
 	if _, err := transaction.Exec(
-		ctx, "DELETE FROM lessons WHERE course_id = $1", courseID,
+		ctx, "DELETE FROM kb_sections WHERE kb_id = $1", kbID,
 	); err != nil {
-		return fmt.Errorf("clear lessons: %w", err)
+		return fmt.Errorf("clear sections: %w", err)
 	}
-	if len(lessons) == 0 {
+	if len(sections) == 0 {
 		return nil
 	}
 
 	batch := &pgx.Batch{}
-	for _, lesson := range lessons {
-		keyPoints, err := json.Marshal(lesson.KeyPoints)
+	for _, section := range sections {
+		sourceNames, err := json.Marshal(section.SourceNames)
 		if err != nil {
-			return fmt.Errorf("encode key points: %w", err)
+			return fmt.Errorf("encode source names: %w", err)
 		}
 		batch.Queue(`
-			INSERT INTO lessons (course_id, ord, title, objective, key_points, body_md)
-			VALUES ($1,$2,$3,$4,$5,$6)`,
-			courseID, lesson.Ord, lesson.Title, lesson.Objective, keyPoints, lesson.BodyMD)
+			INSERT INTO kb_sections (
+				kb_id, ord, path, anchor, title, summary, body_md, source_names
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+			kbID, section.Ord, section.Path, section.Anchor, section.Title,
+			section.Summary, section.BodyMD, sourceNames)
 	}
 	results := transaction.SendBatch(ctx, batch)
 	if err := results.Close(); err != nil {
-		return fmt.Errorf("insert lessons: %w", err)
+		return fmt.Errorf("insert sections: %w", err)
 	}
 	return nil
 }
 
-func (r *PostgresRepository) lessonsFor(
-	ctx context.Context, q querier, courseIDs []string,
-) (map[string][]api.Lesson, error) {
-	byCourse := map[string][]api.Lesson{}
-	if len(courseIDs) == 0 {
-		return byCourse, nil
+func (r *PostgresRepository) sectionsFor(
+	ctx context.Context, q querier, kbIDs []string,
+) (map[string][]api.Section, error) {
+	byKB := map[string][]api.Section{}
+	if len(kbIDs) == 0 {
+		return byKB, nil
 	}
 	rows, err := q.Query(ctx, `
-		SELECT course_id, ord, title, objective, key_points, body_md
-		FROM lessons WHERE course_id = ANY($1) ORDER BY course_id, ord`, courseIDs)
+		SELECT kb_id, ord, path, anchor, title, summary, body_md, source_names
+		FROM kb_sections WHERE kb_id = ANY($1) ORDER BY kb_id, ord`, kbIDs)
 	if err != nil {
-		return nil, fmt.Errorf("read lessons: %w", err)
+		return nil, fmt.Errorf("read sections: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var courseID string
-		var lesson api.Lesson
-		var keyPoints []byte
+		var kbID string
+		var section api.Section
+		var sourceNames []byte
 		if err := rows.Scan(
-			&courseID, &lesson.Ord, &lesson.Title, &lesson.Objective, &keyPoints,
-			&lesson.BodyMD,
+			&kbID, &section.Ord, &section.Path, &section.Anchor, &section.Title,
+			&section.Summary, &section.BodyMD, &sourceNames,
 		); err != nil {
-			return nil, fmt.Errorf("scan lesson: %w", err)
+			return nil, fmt.Errorf("scan section: %w", err)
 		}
-		if err := json.Unmarshal(keyPoints, &lesson.KeyPoints); err != nil {
-			return nil, fmt.Errorf("decode key points: %w", err)
+		if err := json.Unmarshal(sourceNames, &section.SourceNames); err != nil {
+			return nil, fmt.Errorf("decode source names: %w", err)
 		}
-		lesson.Normalize()
-		byCourse[courseID] = append(byCourse[courseID], lesson)
+		section.Normalize()
+		byKB[kbID] = append(byKB[kbID], section)
 	}
-	return byCourse, rows.Err()
+	return byKB, rows.Err()
 }
 
-// uniqueSlug resolves a collision by suffixing, matching what the JSON store it
-// replaces did. The SELECT and the INSERT share a transaction, so two ingests racing on
-// the same title cannot both settle on the same suffix.
+// uniqueSlug resolves a collision by suffixing. The SELECT and the INSERT share a
+// transaction, so two ingests racing on the same display name cannot both settle on the
+// same suffix.
 func uniqueSlug(ctx context.Context, transaction pgx.Tx, desired string) (string, error) {
 	rows, err := transaction.Query(
-		ctx, "SELECT slug FROM courses WHERE slug = $1 OR slug LIKE $1 || '-%'", desired,
+		ctx,
+		"SELECT slug FROM knowledge_bases WHERE slug = $1 OR slug LIKE $1 || '-%'",
+		desired,
 	)
 	if err != nil {
 		return "", fmt.Errorf("read slugs: %w", err)
@@ -337,65 +350,84 @@ func uniqueSlug(ctx context.Context, transaction pgx.Tx, desired string) (string
 	}
 }
 
-func encodeDocuments(course api.Course) (voiceCard, positions, sourceFiles []byte, err error) {
-	if voiceCard, err = json.Marshal(course.VoiceCard); err != nil {
-		return nil, nil, nil, fmt.Errorf("encode voice card: %w", err)
-	}
-	if positions, err = json.Marshal(course.Positions); err != nil {
-		return nil, nil, nil, fmt.Errorf("encode positions: %w", err)
-	}
-	if sourceFiles, err = json.Marshal(course.SourceFiles); err != nil {
-		return nil, nil, nil, fmt.Errorf("encode source files: %w", err)
-	}
-	return voiceCard, positions, sourceFiles, nil
+// encodedDocuments is the JSONB half of a knowledge-base row. The pre-roll, the chips
+// and the quiz stay documents because the review screen edits each of them wholesale;
+// sections get a table because Journey 2 addresses them individually.
+type encodedDocuments struct {
+	preRoll     []byte
+	chips       []byte
+	quiz        []byte
+	sourceFiles []byte
 }
 
-func scanCourses(rows pgx.Rows) ([]api.Course, error) {
+func encodeDocuments(knowledgeBase api.KnowledgeBase) (encodedDocuments, error) {
+	var encoded encodedDocuments
+	var err error
+	if encoded.preRoll, err = json.Marshal(knowledgeBase.PreRoll); err != nil {
+		return encodedDocuments{}, fmt.Errorf("encode pre-roll: %w", err)
+	}
+	if encoded.chips, err = json.Marshal(knowledgeBase.Chips); err != nil {
+		return encodedDocuments{}, fmt.Errorf("encode chips: %w", err)
+	}
+	if encoded.quiz, err = json.Marshal(knowledgeBase.Quiz); err != nil {
+		return encodedDocuments{}, fmt.Errorf("encode quiz: %w", err)
+	}
+	if encoded.sourceFiles, err = json.Marshal(knowledgeBase.SourceFiles); err != nil {
+		return encodedDocuments{}, fmt.Errorf("encode source files: %w", err)
+	}
+	return encoded, nil
+}
+
+func scanKnowledgeBases(rows pgx.Rows) ([]api.KnowledgeBase, error) {
 	defer rows.Close()
-	courses := []api.Course{}
+	stored := []api.KnowledgeBase{}
 	for rows.Next() {
-		course, err := scanCourse(rows)
+		knowledgeBase, err := scanKnowledgeBase(rows)
 		if err != nil {
 			return nil, err
 		}
-		courses = append(courses, course)
+		stored = append(stored, knowledgeBase)
 	}
-	return courses, rows.Err()
+	return stored, rows.Err()
 }
 
-// scanCourse works for both pgx.Row and pgx.Rows, which is why it takes the narrow
-// interface rather than either concrete type.
-func scanCourse(row interface{ Scan(dest ...any) error }) (api.Course, error) {
-	var course api.Course
-	var voiceCard, positions, sourceFiles []byte
+// scanKnowledgeBase works for both pgx.Row and pgx.Rows, which is why it takes the
+// narrow interface rather than either concrete type.
+func scanKnowledgeBase(row interface{ Scan(dest ...any) error }) (api.KnowledgeBase, error) {
+	var knowledgeBase api.KnowledgeBase
+	var preRoll, chips, quiz, sourceFiles []byte
 	var createdAt, updatedAt time.Time
 
 	err := row.Scan(
-		&course.ID, &course.SpecialistID, &course.SpecialistName, &course.SpecialistBio,
-		&course.Slug, &course.Title, &course.Tagline, &course.PriceCents, &course.Status,
-		&course.IngestStatus, &course.IngestError, &voiceCard, &positions,
-		&course.SourceText, &sourceFiles, &createdAt, &updatedAt,
+		&knowledgeBase.ID, &knowledgeBase.CandidateID, &knowledgeBase.CandidateName,
+		&knowledgeBase.CandidateBio, &knowledgeBase.Slug, &knowledgeBase.Title,
+		&knowledgeBase.Tagline, &knowledgeBase.Status, &knowledgeBase.IngestStatus,
+		&knowledgeBase.IngestError, &preRoll, &chips, &quiz,
+		&knowledgeBase.SourceText, &sourceFiles, &createdAt, &updatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return api.Course{}, ErrNotFound
+		return api.KnowledgeBase{}, ErrNotFound
 	}
 	if err != nil {
-		return api.Course{}, fmt.Errorf("scan course: %w", err)
+		return api.KnowledgeBase{}, fmt.Errorf("scan knowledge base: %w", err)
 	}
 
-	if err := json.Unmarshal(voiceCard, &course.VoiceCard); err != nil {
-		return api.Course{}, fmt.Errorf("decode voice card: %w", err)
+	if err := json.Unmarshal(preRoll, &knowledgeBase.PreRoll); err != nil {
+		return api.KnowledgeBase{}, fmt.Errorf("decode pre-roll: %w", err)
 	}
-	if err := json.Unmarshal(positions, &course.Positions); err != nil {
-		return api.Course{}, fmt.Errorf("decode positions: %w", err)
+	if err := json.Unmarshal(chips, &knowledgeBase.Chips); err != nil {
+		return api.KnowledgeBase{}, fmt.Errorf("decode chips: %w", err)
 	}
-	if err := json.Unmarshal(sourceFiles, &course.SourceFiles); err != nil {
-		return api.Course{}, fmt.Errorf("decode source files: %w", err)
+	if err := json.Unmarshal(quiz, &knowledgeBase.Quiz); err != nil {
+		return api.KnowledgeBase{}, fmt.Errorf("decode quiz: %w", err)
 	}
-	course.CreatedAt = api.Timestamp(createdAt)
-	course.UpdatedAt = api.Timestamp(updatedAt)
-	course.Normalize()
-	return course, nil
+	if err := json.Unmarshal(sourceFiles, &knowledgeBase.SourceFiles); err != nil {
+		return api.KnowledgeBase{}, fmt.Errorf("decode source files: %w", err)
+	}
+	knowledgeBase.CreatedAt = api.Timestamp(createdAt)
+	knowledgeBase.UpdatedAt = api.Timestamp(updatedAt)
+	knowledgeBase.Normalize()
+	return knowledgeBase, nil
 }
 
 // parseTimestamp turns the RFC 3339 strings the API carries back into a time for the

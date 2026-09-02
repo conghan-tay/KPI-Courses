@@ -1,4 +1,4 @@
-"""Getting a status line out of a running graph and onto the Specialist's screen.
+"""Getting a status line out of a running graph and onto the candidate's screen.
 
 The ingestion panel shows a live line of `meta` status and no percentage, because a run
 has no honest midpoint. Producing that line is harder than it looks: the graph's nodes
@@ -24,7 +24,7 @@ from temporalio.client import Client
 logger = structlog.get_logger(__name__)
 
 # The workflow's signal handler. Must match SIGNAL_ADD_PROGRESS in
-# app/temporal/course_workflow.py.
+# app/temporal/kb_workflow.py.
 SIGNAL_ADD_PROGRESS = "add_progress"
 
 
@@ -60,5 +60,5 @@ class TemporalProgressReporter(ProgressReporter):
             await handle.signal(SIGNAL_ADD_PROGRESS, line)
         except Exception as exc:  # noqa: BLE001
             # A status line is cosmetic. Losing one must never fail an activity and cost
-            # the Specialist a retry of real work.
+            # the candidate a retry of real work.
             logger.warning("progress_signal_failed", line=line, error=str(exc))

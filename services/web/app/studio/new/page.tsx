@@ -1,13 +1,13 @@
 import { AppFrame } from "@/components/frame/AppFrame";
 import { ButtonLink } from "@/components/ui/button";
-import { NewCourseForm } from "@/components/studio/NewCourseForm";
+import { NewKBForm } from "@/components/studio/NewKBForm";
 import { SectionHead } from "@/components/riso/SectionHead";
 
-export default function NewCoursePage() {
+export default function NewKnowledgeBasePage() {
   return (
     <AppFrame>
       <SectionHead
-        title="Build a course"
+        title="Build a knowledge base"
         note="Step 1 of 3"
         actions={
           <ButtonLink variant="ghost" href="/studio">
@@ -15,7 +15,7 @@ export default function NewCoursePage() {
           </ButtonLink>
         }
       />
-      <NewCourseForm />
+      <NewKBForm />
     </AppFrame>
   );
 }

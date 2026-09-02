@@ -1,40 +1,43 @@
 import { AppFrame } from "@/components/frame/AppFrame";
 import { ButtonLink } from "@/components/ui/button";
-import { CourseTable } from "@/components/studio/CourseTable";
 import { EmptyState } from "@/components/riso/EmptyState";
+import { KBTable } from "@/components/studio/KBTable";
 import { SectionHead } from "@/components/riso/SectionHead";
-import { listMyCourses } from "@/lib/queries";
+import { listMyKnowledgeBases } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function StudioPage() {
-  const [user, courses] = await Promise.all([getCurrentUser(), listMyCourses()]);
+  const [user, rows] = await Promise.all([
+    getCurrentUser(),
+    listMyKnowledgeBases(),
+  ]);
 
   return (
     <AppFrame>
       <SectionHead
-        title="Your courses"
-        note={`${user.name} · ${courses.length} total`}
+        title="Your knowledge bases"
+        note={`${user.name} · ${rows.length} total`}
         actions={
           <ButtonLink variant="accent" size="lg" href="/studio/new">
-            Build a course
+            Build one
           </ButtonLink>
         }
       />
 
-      {courses.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
-          title="No courses yet. Make one."
-          note="Drop in whatever you already wrote — a manuscript, transcripts, an AMA thread. Ten minutes to a live course."
+          title="Nothing here yet. Build one."
+          note="Drop in whatever you already wrote — a CV, an architecture doc, notes on why you left. Ten minutes to something a recruiter can actually interrogate."
           action={
             <ButtonLink variant="accent" href="/studio/new">
-              Build a course
+              Build one
             </ButtonLink>
           }
         />
       ) : (
-        <CourseTable courses={courses} />
+        <KBTable rows={rows} />
       )}
     </AppFrame>
   );

@@ -1,175 +1,377 @@
 {
-  "course": {
-    "slug": "hold-your-number",
-    "title": "Hold Your Number",
-    "tagline": "The deal is won or lost long before anyone says a price.",
-    "price_cents": 34900,
+  "kb": {
+    "slug": "arun-velasco",
+    "title": "Arun Velasco",
+    "tagline": "Payments engineer. Eleven years, four employers, one gap I'll tell you about.",
     "status": "draft"
   },
 
-  "lessons": [
+  "sections": [
     {
       "ord": 1,
-      "title": "The Objection You Hear Is Not The One You Have",
-      "objective": "Can take a lost deal and place the failure in one of exactly two places — no signing authority, or no stated cost of the problem — and say which, out loud, without touching the price.",
-      "key_points": [
-        "\"They went with someone cheaper\" is a report, not a diagnosis; the first question is always what they compared it to.",
-        "Eight times in ten the seller cannot name the competitor, the scope, or the number — which means there was no comparison, only a polite exit.",
-        "There are two upstream failures and no third: you were talking to someone who cannot sign, or the buyer never said what the problem costs them.",
-        "Responding to a price objection with price moves — discount, extra tier, new deck — is treatment applied to the wrong organ."
-      ],
-      "body_md": "Every pricing problem arrives disguised as a pricing problem. Somebody forwards you a lost deal and the note says they went with someone cheaper.\n\nAsk one question: what did they compare you to? Which firm, what scope, what number. Most of the time nobody knows, because nobody asked, because \"too expensive\" is how a buyer ends a conversation politely.\n\nThe pump business teaches this faster than services does. In a plant, the price meeting is ninety minutes of argument and the outcome was settled weeks earlier, when the maintenance engineer wrote the spec. Spec written generically, you're one of four vendors fighting over two percent. Spec written around your part number, the meeting is theater.\n\nSo when the number gets argued, look upstream, and look for one of two things. Either the person in the room can't sign, or you never got them to say what the problem is costing. Seventeen years of looking for a third cause has not produced one.\n\nThe trap is that price objections invite price responses. You discount, you add a tier, you rebuild the deck. None of it touches the organ that's actually failing."
+      "path": "career/timeline",
+      "anchor": "overview",
+      "title": "Timeline — eleven years, four employers, one gap",
+      "summary": "The full employment history in order, including the eleven-month gap in 2016, stated plainly rather than smoothed over.",
+      "source_names": ["resume.md"],
+      "body_md": "**Halberd Systems** — Graduate Engineer — Mar 2012 to Nov 2014. Java, Oracle, internal reporting for an equipment-leasing business. Learned to read a query plan. Left because the team was wound down, with eight months' notice.\n\n**Speedwell Logistics** — Backend Engineer — Jan 2015 to Feb 2016. Route planning and driver dispatch in Python and Postgres. First service he owned that woke him up, and the first time he put a queue in Postgres rather than asking for Kafka.\n\n**Career gap** — Feb 2016 to Jan 2017, eleven months. His father had a stroke and he moved back to Penang to deal with hospitals and insurers. He is explicit that there was no side project and no sabbatical framing: *\"I read a lot and I was tired.\"* It is on the CV in plain text deliberately.\n\n**Rialto Payments** — Senior Backend Engineer — Feb 2017 to Aug 2019. Card acquiring for small merchants: authorisation, capture, refunds, chargeback representment. Also the only machine learning he has shipped — see `ml/currency`.\n\n**Agoda** — Senior, then Staff Engineer — Sep 2019 to Apr 2025. Five and a half years on supplier payouts. Owned virtual card issuance, PSP routing and failover, nightly reconciliation, and the payout queue.\n\n**Independent** — May 2025 to present. Contract backend work and an unpaid advisory seat at NodusArt."
     },
     {
       "ord": 2,
-      "title": "Leave The First Call With A Range And A Name",
-      "objective": "Can end a 25-minute first call holding a budget range the buyer said out loud (or one you stated and tested) plus the name of the person who signs — and can walk away in minute six when neither exists.",
-      "key_points": [
-        "The first call has two jobs: the range and the name. Describing what you do is not one of them.",
-        "Script, unchanged in nine years: \"Do you have a number in your head for this? I'm not going to hold you to it. I just don't want to send you something that's off by ten times in either direction.\"",
-        "\"Either direction\" is the load-bearing phrase — it gives permission to say a big number without feeling like a mark.",
-        "If they won't say a number, you say one: a range whose floor is higher than is comfortable, followed by \"does that end the conversation?\"",
-        "Losing in minute six is a business model. Losing in week three is a tax."
-      ],
-      "body_md": "Nobody has ever bought anything because a vendor described what they do well. So stop spending the first call doing it.\n\nTwo jobs. A range, out of the buyer's mouth. And the name of the signer. End a call without both and you didn't have a sales call, you had a nice chat, and you're about to spend eleven hours writing a proposal for a stranger.\n\nPeople think asking about money early is rude. Procurement asks in the first four minutes and nobody calls them rude; they call them procurement. What's actually rude is spending a buyer's Tuesday and your own week to arrive at a number that was never in the realm.\n\nUse the words: *Before I go build something — do you have a number in your head for this? I'm not going to hold you to it. I just don't want to send you something that's off by ten times in either direction.*\n\nIf they won't answer, go first, in a range, floor set high: *Work like this usually runs eighty to a hundred and forty. Does that end the conversation?* That isn't negotiation. It's a test for whether a conversation exists.\n\nAnd if the answer is \"we were thinking fifteen\" — good. You just bought back a week."
+      "path": "career/timeline",
+      "anchor": "agoda-exit",
+      "title": "Why he left Agoda",
+      "summary": "One paragraph, no wandering: the platform reached the state he wanted, the remaining work was operating it, and a 2025 reorg pointed at breadth he did not believe in.",
+      "source_names": ["career-notes.md"],
+      "body_md": "The payouts platform got to the state he wanted it in — breakers, a `deferred` state, reconciliation with four classes and a ~94% auto-resolve rate, a queue that had not paged anyone in about eight months. What was left was operating it, and he says plainly that he is not the person who enjoys the fourth year of operating something.\n\nA reorg in early 2025 moved the platform under a group whose roadmap was \"more surface area, less depth, a lot of integrations\" — a direction he did not believe in. He gave three months' notice and left in April 2025.\n\nHe is emphatic that nobody was unkind, he was not managed out, and there is no story underneath the one he tells."
     },
     {
       "ord": 3,
-      "title": "Get The Cost Of Doing Nothing Said Out Loud",
-      "objective": "Can run a call that ends with the buyer stating a specific figure for what the unsolved problem costs them, and can correctly read the three failure modes when no figure appears.",
-      "key_points": [
-        "\"Value\" is a number the buyer says, not one you compute in a spreadsheet and present.",
-        "The target is one sentence: \"if this doesn't get fixed by Q3 we lose the renewal, which is about four hundred grand.\"",
-        "Once that sentence exists, your fee is compared to their number instead of to a marketplace freelancer.",
-        "Ask \"What happens if you do nothing until next year?\" — never \"what's the impact,\" which returns adjectives.",
-        "No number means one of three things: they're early (no approval), they don't trust you yet, or it's a nice-to-have that dies in committee. All three are useful; none are fixed by a better proposal."
-      ],
-      "body_md": "Everyone in services has been told to sell value instead of hours, and nobody explains the mechanical part: value is a number the buyer says. Your spreadsheet doesn't count. Their sentence counts.\n\nYou are hunting for one line. *If this doesn't get fixed by Q3 we lose the renewal, and that's about four hundred grand.* That sentence is the deal. After it, your number sits next to four hundred thousand. Before it, your number sits next to whatever they could find on a marketplace.\n\nDon't ask about impact. Impact questions return adjectives — significant, strategic, painful. Ask instead: **what happens if you do nothing until next year?** Doing nothing is a real option they've already considered, which means they've already priced it. They'll tell you.\n\nIf the number never comes, read which of three you have. They don't know it: you're early, there's no approval. They know and won't say: you haven't earned it yet. There isn't one: this is a nice-to-have and it dies in committee in March.\n\nAll three are information. None of them are a proposal problem."
+      "path": "career/timeline",
+      "anchor": "what-next",
+      "title": "What he wants next, what he'd turn down, and his band",
+      "summary": "Correctness-hard payments or ledger work, end-to-end ownership including on-call, staff scope with no management track — plus the roles he would decline and the compensation band, stated up front.",
+      "source_names": ["career-notes.md"],
+      "body_md": "**Looking for**\n\n- A payments or ledger system where **correctness is the hard part**, not throughput. Explicitly not an ads pipeline.\n- Ownership of something end to end, **including the on-call for it**. He does not want to be handed a service someone else designed and be accountable for its uptime.\n- Somewhere he can write at length about the systems he builds — every write-up in this knowledge base was a document he wrote at work first.\n- **Staff-level scope without a management track.** He has managed people, was competent at it, and does not want to do it again.\n\n**Would turn down**\n\n- A pure platform-migration role. \"A real job and it is not mine.\"\n- A role where the payments logic lives in a vendor and the job is configuring it: *\"if nobody on the team can explain what happens on a failed capture, I am support staff with a better title.\"*\n- Anything requiring him to call himself an ML engineer.\n- A rate below his band.\n\n**Band, stated in the first conversation on purpose:** 8,000–9,500 USD per month for remote contract work; 4.2–5.0 million THB per year for a permanent role in Bangkok. He says directly that he will not be talked up from it later."
     },
     {
       "ord": 4,
-      "title": "Charge For The Diagnosis",
-      "objective": "Can scope, quote and close a paid assessment — deliverable, date, invoice, six to twelve thousand — in place of a free two-hour diagnosis, and can answer \"nobody pays for a scoping call\" without flinching.",
-      "key_points": [
-        "Whatever you give away free defines what the buyer thinks the category is worth.",
-        "Free discovery teaches buyers that thinking is a sales cost and only doing is billable — then you're confused when they resist strategy fees and never resist headcount.",
-        "The 25-minute first call stays free. The assessment is what gets an invoice: a name, a deliverable, a date, $6–12k, ~2 weeks.",
-        "Paid buyers behave differently: they attend, they bring finance, they send the data, and they've told their boss about you.",
-        "The large engagement stops being a proposal and becomes a continuation of work already underway.",
-        "Can't sell a paid assessment → you were never going to sell the $140k engagement, you just hadn't found out yet."
-      ],
-      "body_md": "Free discovery is a training program, and the thing it trains is a belief: your thinking is worth zero, your doing is worth money. Hand over a two-hour diagnosis, a stakeholder map and a rough plan for nothing, and you've filed the highest-margin thing you produce under sales cost.\n\nThat belief then follows you through the whole relationship. It's why they argue about strategy fees and never argue about headcount.\n\nThis is not an argument for invoicing the first call. The first call is free, it's twenty-five minutes, and it has the two jobs. What gets charged is the assessment: same conversation you were going to have anyway, except now it has a name, a deliverable, a date and an invoice. Six to twelve thousand, about two weeks, ends in a document and a recommendation.\n\nThe part people don't predict is the behavior change. A buyer who paid eight thousand dollars shows up. Brings the finance person. Sends the data. Has told their boss about you, which means they now need you to be good.\n\nAnd the objection — *nobody pays for a scoping call* — is correct. Nobody does. They pay for an assessment with a deliverable and a date. Same call, different name, invoice attached."
+      "path": "agoda/supplier-payouts",
+      "anchor": "issuance-flow",
+      "title": "Supplier payouts — the issuance flow end to end",
+      "summary": "Five hops from booking event to settlement: payable created, batched into a payout, PSP selected, virtual card issued, settled and reconciled. Roughly two million payables a month across ~140 countries.",
+      "source_names": ["agoda-supplier-payouts.md"],
+      "body_md": "Paying hotels rather than taking money from travellers — the mirror image of acquiring, and the failure modes do not rhyme. *\"In acquiring, the worst case is you did not get paid. In payouts, the worst case is you paid twice, and the counterparty has no incentive to tell you.\"*\n\nScale when he left: roughly two million payables a month, ~140 countries.\n\n1. **Payable created.** A booking event lands; contract terms decide when it falls due. A row with amount, currency, due date and supplier. Nothing moves.\n2. **Batched into a payout.** A sweep groups payables by supplier and currency, so a supplier owed eleven small amounts gets one card, not eleven.\n3. **PSP selected.** Routing picks a provider for the corridor — currency, country, amount band, and current health. See `agoda/psp-routing#circuit-breakers`.\n4. **Virtual card issued.** A single-use card number with an exact limit and a merchant-category lock. The card *is* the payment instrument.\n5. **Settlement and reconciliation.** The issuer reports what was actually authorised and captured — rarely instantly, and frequently not equal to what was issued. See `agoda/reconciliation#spark-pipeline`."
     },
     {
       "ord": 5,
-      "title": "Never Send A Proposal You Haven't Already Said Out Loud",
-      "objective": "Can deliver every number, phase and exclusion verbally on a call, handle the reaction in real time, and send the written document afterward as a record rather than a pitch.",
-      "key_points": [
-        "The buyer should have heard every number, phase and exclusion from your mouth before it exists as a PDF.",
-        "A document cannot handle an objection — a surprising number in a PDF surfaces three days later by email, or as silence.",
-        "On a call the surprise shows on their face and you deal with it in four seconds. That's the job.",
-        "Enterprise written requirements are satisfied by sending the document after the call, framed as \"here's what we said.\"",
-        "Nobody has ever been talked into anything by a PDF; plenty of people have been talked out of things by one.",
-        "Reluctance to say the number out loud is a symptom of not believing the number — a separate problem, fixed in lessons 2 and 3."
-      ],
-      "body_md": "Proposals are where good deals go to die quietly.\n\nThe rule is one sentence: never send a proposal that hasn't already been said out loud. Every number, every phase, every exclusion, spoken on a call, with the buyer given a chance to react, before any of it becomes a PDF.\n\nThe reason is mechanical. A document can't handle an objection. If your number surprises somebody while they're reading it alone, you learn about it three days later by email — more often, you learn about it by silence, and you never find out which line did the damage. Say the same number on a call and their face does something, and you have four seconds to work with it. That four seconds is the entire job.\n\nEnterprise buyers who require written proposals are not a counterexample. The document goes out *after* the conversation, and its frame is confirmation: here's what we agreed. It is a record, not a pitch.\n\nIf reading the number aloud makes you flinch, the problem isn't the script. You don't believe the number, and that gets fixed upstream."
+      "path": "agoda/supplier-payouts",
+      "anchor": "virtual-card-issuance",
+      "title": "Virtual card issuance",
+      "summary": "Real card issuing experience, scoped honestly: single-use virtual commercial cards for B2B payout, not consumer credit. Exact limits, MCC locks, validity windows, fixed currency, across three issuing APIs behind one deliberately narrow interface.",
+      "source_names": ["agoda-supplier-payouts.md"],
+      "body_md": "He has issued cards, and he scopes it before it can be assumed broader: **single-use virtual commercial cards for B2B payout**, not consumer credit cards.\n\n- **Limits are exact, not approximate.** The card is minted with an authorisation limit equal to the payable, in the payable's currency, and declines anything above it. *\"A card with a rounded-up limit is an invitation for a supplier to help themselves.\"*\n- **Merchant category locks.** Lodging MCCs only. Caught real misuse twice that he knows of.\n- **Validity windows.** Open at issue, closed on a schedule matching the contract, so an unused card does not sit live for a year.\n- **Single use means single use.** A card authorised once is closed to further authorisations even if the amount came in under the limit; the difference is settled through reconciliation, not by leaving the card open.\n- **Currency fixed at issuance.** No provider-side conversion — *\"a provider's FX spread is not a cost I can explain to finance six weeks later.\"*\n\nThree PSPs, three issuing APIs, one internal interface — built as **the intersection of what all three could do, not the union**. Every time a single provider's special capability leaked into the interface, it was paid for in the failover path."
     },
     {
       "ord": 6,
-      "title": "One Recommendation, Not Three Options",
-      "objective": "Can decide whether a given deal gets a single recommendation or a second, more expensive option — and can defend that choice using average deal size rather than close rate.",
-      "key_points": [
-        "Three tiers is a discount nobody asked for: you invented a cheaper option for a buyer who was already ready.",
-        "The theory is anchoring — the middle looks reasonable beside the top. The practice is that nobody gets fired for taking the middle.",
-        "Tiering advocates cite close rate. Measure average deal size instead; the direction usually reverses.",
-        "If you want a second option, make it more expensive and more ambitious, so the conversation runs toward scope-up rather than scope-down.",
-        "This is a minority position and should be argued as one, not asserted as consensus."
-      ],
-      "body_md": "Three-option proposals are close to universal advice, and I think they're mostly wrong. I know that puts me in the minority.\n\nThe theory is anchoring: put a big number on the right and the middle column starts to look sensible. The practice is that a buyer who was fully prepared to pay the top number takes the middle one, because you offered it, and it's cheaper, and nobody in any company has ever been fired for choosing the middle option. You built a discount and handed it to someone who never asked for one.\n\nWhen people defend tiers they cite conversion. Conversion to the middle. Run average deal size instead — total revenue over deals closed, before and after you introduced tiers. Most firms who actually run that number stop tiering within the week.\n\nWhat replaces it is one recommendation: this is the thing I think you should do, here is what it costs. If you want a second option on the page, make it *larger* — more ambitious, more expensive. Then the negotiation you're having is about scoping up, and the cheapest thing in the room is still your real number."
+      "path": "agoda/supplier-payouts",
+      "anchor": "idempotency",
+      "title": "Idempotency for money movement",
+      "summary": "The key is derived from (payout_id, attempt_number), generated and persisted before the provider call. Deterministic so a retry reproduces it, durable so it survives process death.",
+      "source_names": ["agoda-supplier-payouts.md"],
+      "body_md": "Issuing a card is issuing money. The system must never issue two cards for one payable because a call timed out and something retried.\n\nThe key is derived from **`(payout_id, attempt_number)`**, and both properties are load-bearing:\n\n- **Deterministic.** Not a UUID per request. A UUID means a retry generates a *new* key, which is identical to having no key. The same logical attempt must produce the same key both times, and deriving it from data that already exists is the only guarantee of that.\n- **Generated and persisted before the call goes out.** Written to the database in the same transaction that marks the attempt started, and only then does the provider get called. If the process dies between the write and the response, recovery reads the key back and asks the provider what became of it — impossible if the key only ever existed in memory.\n\n`attempt_number` rather than a bare `payout_id` because a *deliberate* second attempt — first provider hard-declined, trying another — is a genuinely different payment and must not be deduplicated against the first.\n\nHis line for juniors: **\"an idempotency key that does not survive process death is decoration. Most of the ones I have reviewed are decoration.\"**"
     },
     {
       "ord": 7,
-      "title": "Hold The Number",
-      "objective": "Can answer a discount request by removing scope in specific terms, and can raise a rate on an existing client with a date, a reason that isn't about their own costs, and 60 days' written notice — having already said it on a call.",
-      "key_points": [
-        "Never lower the price without taking something out of the box — not for logos, not at quarter end.",
-        "A number that moves because someone asked was never real; buyers retest it at renewal and every later negotiation starts from the discounted figure.",
-        "Marquee-client discounts cost price integrity; give the logo full price and a smaller box instead, so it costs delivery capacity.",
-        "Price increases: give a date and a reason that isn't about your costs. \"Effective July 1, this program is 12,500 a month.\"",
-        "Sixty days' notice, in writing, said on a call first. Expect to lose one client and budget for it emotionally in advance.",
-        "Discount authority for salespeople is zero; every exception routes to one person. Pricing is lost in forty small unlogged decisions, not one big one.",
-        "Calendar renewals at 90 days, not 30 — at 30 the deadline pressure is yours."
-      ],
-      "body_md": "One rule, deliberately rigid: never lower the price without taking something out of the box.\n\nThe moment a number moves because somebody asked, you've told the buyer the number was never real. They don't forget that. They retest it at renewal, and every negotiation you have with them afterward starts from the discounted figure rather than the true one.\n\nThe logo deal is the most expensive version of this. Take the marquee client at forty percent off and you now have a famous client who knows your real price is sixty percent of your stated price, will renew there permanently, and whose VP will tell three peers what they paid. The referral value everyone cites in exchange is unmeasurable — nobody runs the counterfactual. If you want the logo, charge full and shrink the box: fewer deliverables, less access, lighter reporting. Then the logo costs you delivery capacity instead of costing you your pricing.\n\nRaising prices on existing clients runs on the same principle. A date and a reason that isn't about you: *effective July 1, this program is 12,500 a month* — not \"our costs have gone up,\" which is a story about your problems and invites them to have opinions about your problems. Sixty days, in writing, spoken on a call first. Expect to lose one. It's almost always the one that was eating your team alive."
+      "path": "agoda/psp-routing",
+      "anchor": "circuit-breakers",
+      "title": "PSP circuit breakers, and the incident that reshaped them",
+      "summary": "One breaker per PSP per corridor. Opens on five consecutive failures or a >20% error rate over sixty seconds; half-open admits exactly one real payout. The PSP-B incident showed the breaker measured the wrong thing, so latency became an input.",
+      "source_names": ["agoda-psp-routing.md"],
+      "body_md": "One breaker **per PSP per corridor**, not per PSP — provider B being broken for THB says little about provider B for EUR, and collapsing them lets one bad corridor take out a healthy one.\n\n**Opens on five consecutive failures, or a greater-than-20% error rate over a sixty-second window**, whichever comes first. Five-in-a-row is the fast path for a provider that has fallen over; the rate-over-window is the slow path for intermittent failure, where you would otherwise wait forever for five consecutive.\n\n**Half-open:** after thirty seconds, exactly one request is admitted — a real payout, not a synthetic ping, because *\"a synthetic health check tells you the provider's status page is up, which is not the question.\"* Success closes the breaker; failure reopens it and doubles the window, capped at five minutes. One request rather than a percentage, because at this volume \"let 5% through\" sends thousands of real payouts at a provider just judged broken.\n\n**Before the breakers**, provider A returned 503s for forty minutes; retries on a fixed schedule kept the queue saturated and healthy corridors backed up behind it. Nothing was lost — it was slow and obviously preventable, and it bought the budget to build breakers.\n\n**The PSP-B incident is the one he learned from.** The breaker was in place and did not open, because provider B did not start erroring — it started being slow. p99 issuance latency went from **210ms to about nine seconds** and stayed there for most of an afternoon. Everything eventually succeeded, so the error rate stayed near zero, so the breaker stayed shut, so traffic kept routing to it. *\"I had built a breaker that measured errors, in a system where the realistic failure mode was latency. That is not a bug. It is a design that answered the wrong question, and I signed off on it.\"*\n\n**Fix:** latency is a breaker input. If p99 over the window exceeds four times the trailing seven-day baseline for that corridor, the breaker opens on the same terms as an error rate — relative rather than absolute, because 900ms is fine in one corridor and catastrophic in another.\n\n**The general claim he will argue for:** a health signal that only measures failures you have already seen will miss the next one. Availability and latency are the same metric at different thresholds; a nine-second call in a system with no timeout is *worse* than an error, because it consumes a worker and reports success."
+    },
+    {
+      "ord": 8,
+      "path": "agoda/psp-routing",
+      "anchor": "deferred",
+      "title": "Deferred — when every provider is out",
+      "summary": "With all breakers in a corridor open, a payout parks in a deferred state and a retry sweep picks it up. Adding that state eighteen months late is the design regret he raises unprompted.",
+      "source_names": ["agoda-psp-routing.md"],
+      "body_md": "If every breaker in a corridor is open there is nowhere to route. **The payout does not fail — it parks in a `deferred` state, and a retry sweep picks it up when a breaker closes.**\n\nFailing it would be wrong: a supplier payout is not a checkout, nobody is standing at a till, the money is genuinely owed, and the only true statement is \"we could not pay this yet.\"\n\n**The regret.** `deferred` was not in the original state machine. For eighteen months a payout with nowhere to route sat in `pending` with an incremented `retry_count` and a `last_error` string, and \"is this stuck or just waiting\" was a question answered by reading error text with your eyes. Support could not answer it; dashboards could not count it. It surfaced as a data problem — a mysterious growing bucket of pending rows — when it had been an operational problem the whole time.\n\n**\"An operational state should not have to be inferred from a data state.\"** If an operator will one day ask \"how many of these are stuck\", that is a column on day one, not a `WHERE last_error LIKE` written during an incident. Adding it later cost a backfill, a migration on a hot table, and three weeks of two code paths."
+    },
+    {
+      "ord": 9,
+      "path": "agoda/reconciliation",
+      "anchor": "spark-pipeline",
+      "title": "Nightly reconciliation",
+      "summary": "A nightly Spark job over three disagreeing sources, producing exactly four mismatch classes. About 94% auto-resolve; the remaining ~6% reach an ops queue carrying a class and a suggested action. Only DUPLICATE_ISSUANCE pages a human.",
+      "source_names": ["agoda-reconciliation.md"],
+      "body_md": "Three records of the same money that never agree: the internal ledger, the issuer's authorisation feed, and the bank statement. A card issued for 4,200 THB, authorised at 4,187, settled at 4,191 because two systems disagree about an FX timestamp, is *a normal night*. Treating \"issued equals settled\" as an invariant pages a human two million times a month and they stop reading pages by week two.\n\n**The job:** nightly Spark, about forty minutes normally, over snapshotted `payouts` and `card_issuances`, the issuer's file drop, and the bank settlement statement. It joins on card token plus a **date window**, not an exact timestamp, because the three sources do not share a clock.\n\n**Exactly four mismatch classes**, and the fact that there are exactly four is deliberate — the free-text version of this field produces nine hundred distinct reasons, none of which can be counted, alerted on, or automated against.\n\n- **`AMOUNT_DRIFT`** — settled differs from issued, within a per-corridor tolerance. Auto-resolves; the difference books to an FX variance account.\n- **`TIMING_SKEW`** — everything matches but settlement landed outside the window. The most common class, almost always noise; auto-resolves by widening the window next run.\n- **`DUPLICATE_ISSUANCE`** — two cards, one payable. **The only class that pages a human immediately, at any hour.** Real money left twice, the recovery clock starts now, and no automation should decide which of two real payments is the wrong one.\n- **`ORPHAN_AUTH`** — an authorisation against a card token with no issuance record. High-priority manual queue, **but it does not page**: it has never once been an emergency at 3am, and *\"a class that pages and is never urgent is a class that trains people to ignore pages.\"*\n\n**Volumes:** about **94% of raised mismatches auto-resolve**; the remaining **~6%** land in an ops queue, each carrying its class *and a suggested action*. The suggested action mattered more than expected — `AMOUNT_DRIFT: settled 4,191 vs issued 4,200, within THB tolerance, suggest: accept and book variance` clears in four seconds, where a bare `mismatch` gets escalated because the operator cannot tell if it is the interesting one. He defends the 6%: *\"I would rather it were 6% and correct than 1% and quietly wrong.\"*\n\n**Would change:** the batch cadence is a constraint he accepted, not a design he defends. Nightly hides problems for up to twenty-four hours; a streaming reconciliation would surface them in minutes."
+    },
+    {
+      "ord": 10,
+      "path": "postgres/queue-workers",
+      "anchor": "",
+      "title": "The payout queue and its workers",
+      "summary": "The queue is a Postgres table, claimed at READ COMMITTED with SELECT … FOR UPDATE SKIP LOCKED, backed by the deterministic idempotency key and a per-payable advisory lock. SERIALIZABLE was evaluated and rejected.",
+      "source_names": ["postgres-notes.md"],
+      "body_md": "The queue is a Postgres table — not Kafka, not SQS. The payouts being queued already live in the same database, so `INSERT INTO payout_queue` and `UPDATE payouts SET status` are one transaction. A broker means two systems, an outbox, a relay and a dedup story to make them one atomic thing. *\"At two million payables a month this is not close.\"*\n\n**Workers run at `READ COMMITTED`**, claiming work with:\n\n```sql\nSELECT id FROM payout_queue\nWHERE status = 'ready' AND run_after <= now()\nORDER BY run_after\nFOR UPDATE SKIP LOCKED\nLIMIT 20;\n```\n\n`SKIP LOCKED` is the trick: without it twenty workers queue behind the same first row and you have an expensive single-threaded system. Around it sit two more guarantees — the idempotency key persisted before any provider call, and a **Postgres advisory lock keyed on the payable id** for the duration of issuance.\n\n**Why not `SERIALIZABLE`.** He calls this the most arguable decision in the system and refuses to pretend it is obvious. Two reasons:\n\n1. **Serialization failures became a retry storm.** At that concurrency the predicate locking on the queue table produced enough `could not serialize access` errors that workers spent meaningful time retrying transactions that would have been fine. In a payouts system a retry storm is not a performance problem but a **correctness risk** — every retry is another chance for a partial failure between calling the provider and recording that you called it.\n2. **The correctness it bought was already explicit elsewhere.** The anomaly it protects against is two workers acting on one payable, and that is prevented twice already, in code you can point at: the deterministic idempotency key means a double issuance is rejected by the provider, and the advisory lock means the second worker never gets that far. `SERIALIZABLE` would be a third, implicit, expensive guarantee over two explicit cheap ones.\n\nHe states the counter-argument himself: his two mechanisms are application code and can be deleted by someone who does not know why they are there, whereas an isolation level cannot. *\"That is a real argument. I still think I chose right, but I would want the person making it in the room.\"*"
+    },
+    {
+      "ord": 11,
+      "path": "postgres/opinions",
+      "anchor": "",
+      "title": "Postgres opinions he'll defend",
+      "summary": "Six stated positions from five and a half years of running one cluster hard: queues belong in the database by default, READ COMMITTED plus explicit locking beats high isolation around network calls, long transactions are the real enemy.",
+      "source_names": ["postgres-notes.md"],
+      "body_md": "- **A queue in your database is the correct default.** Move to a broker when you can name the specific thing the database stopped doing, not before. Most teams he has watched adopt a broker did it at a volume Postgres was not noticing.\n- **`READ COMMITTED` plus explicit locking beats a higher isolation level** for anything that talks to an external system inside the transaction boundary. High isolation and network calls are a bad pairing, and the isolation level is the part that has to give.\n- **`SELECT FOR UPDATE` without `SKIP LOCKED` is almost always a bug** in a worker pool. If you meant to serialise, say so with an advisory lock; if you meant to parallelise, skip.\n- **Long transactions are the actual enemy**, not lock contention. Nearly every \"Postgres is slow\" incident he has debugged was one transaction held open across a network call, and the fix was moving the call out, not tuning anything.\n- **Read your query plans.** He will ask you to read one and does not consider it a trick question.\n- **`jsonb` is a fine place to put a document and a terrible place to put a foreign key.** If you are indexing into a `jsonb` array to join, that array wanted to be a table two months ago."
+    },
+    {
+      "ord": 12,
+      "path": "nodusart/advisory",
+      "anchor": "",
+      "title": "NodusArt — the honest scope",
+      "summary": "An unpaid advisory seat: no commits, no equity, no on-call, and no smart contracts written. The one piece of advice that stuck was hashing the provenance record rather than putting it on-chain.",
+      "source_names": ["nodusart-advisory.md"],
+      "body_md": "NodusArt does provenance records for physical artworks. **He is an unpaid advisor: no commits, no equity, no on-call.** Zero lines of code in their repository. Not a founding engineer, not a contractor, and he did not build their smart contracts — he says he would push back on a CV implying any of those.\n\nWhat it actually is: a founder he knows from Bangkok calls every few weeks and he says what he thinks about an architecture decision, sometimes reading a design document. *\"It is worth what it is, not what it would sound like with the word 'engineer' attached.\"* If you are screening for a blockchain engineer, he is not one, and says so before the call rather than after.\n\n**The advice worth repeating.** They wanted the full provenance record on-chain — every attribution, transfer and condition report, immutable, forever. He argued for putting **a content hash of the record plus a timestamp** on-chain and keeping the record in ordinary storage.\n\n- **Cost:** roughly two orders of magnitude cheaper.\n- **And the reason that actually changed the decision: provenance records are wrong sometimes.** Attributions get revised, dates turn out to be a decade off. If the record is immutable, your options when it is wrong are to leave a lie on the chain forever or write a correction a reader has to know to look for. Hashing gives **editable-with-history**: the record can be corrected and every version is still provably the one that existed at a given time. *\"That is what people actually want when they say 'immutable'. They want tamper-evident, and those are not the same word.\"*\n\n**The general form, which is his and which he defends:** immutability is a property you apply to the evidence, not to the claim. Claims get revised, and an architecture that cannot express \"this was true then and is not now\" will eventually be confidently wrong in public.\n\n**What he will not claim:** he could not build a production chain integration without ramping up, has never audited a contract, and has no opinion worth paying for about which chain to use."
+    },
+    {
+      "ord": 13,
+      "path": "ml/currency",
+      "anchor": "",
+      "title": "Where his machine learning actually stands",
+      "summary": "Undergraduate level and roughly seven years stale — one gradient-boosted fraud model shipped at Rialto in 2018, untouched since August 2019. Stated as a known gap, not as modesty.",
+      "source_names": ["career-notes.md", "resume.md"],
+      "body_md": "**Undergraduate level, and roughly seven years stale.** One gradient-boosted fraud-scoring model on transaction features, retrained weekly, shipped to production at Rialto in 2018. It beat the rules engine it replaced. He stopped touching the field in August 2019.\n\nWhat that leaves him able to do: read an abstract and follow a conversation. What it does not: train a model you should put in front of customers. He has never worked with transformers in anger, and everything he knows about ML deployment and monitoring predates the tooling everyone now uses.\n\n*\"If your role is 'payments engineer who will also own the risk model', I am half of that and you should hire the other half.\"*\n\nHe is explicit that this is not modesty: **\"the alternative is finding out in week three, and a candidate brief that quietly upgrades this into 'ML experience' has lied to you on my behalf.\"**"
+    },
+    {
+      "ord": 14,
+      "path": "limits/other",
+      "anchor": "",
+      "title": "Other limits — frontend, Kubernetes, regulatory",
+      "summary": "Three more boundaries he states without being asked: he can make a React page work but would not own one, can operate a cluster but has never designed one, and has no view on licensing strategy.",
+      "source_names": ["career-notes.md"],
+      "body_md": "- **Frontend.** *\"I can make a React page work and it will look like an engineer made it. I would not choose to own one.\"*\n- **Kubernetes.** He can operate what he is given and read the yaml. **He has never designed a cluster and would defer to anyone who has.**\n- **Regulatory and licensing.** He has worked inside a licensed entity and next to compliance people, but is not one of them and has no view on your licensing strategy.\n\nThe pattern across all of these, and across `ml/currency` and `nodusart/advisory`, is the same: he names the boundary before it can be assumed away, and he expects the same in return.\n\nHis stated preference for how the hour should go: *\"Ask me about a decision I got wrong. There are two obvious candidates in this knowledge base — the error-only circuit breaker and the missing `deferred` state — and I would rather spend twenty minutes on either of those than on my CV, which you have already read.\"*"
     }
   ],
 
-  "voice_card": {
-    "register": "Flat and declarative. Short sentences, frequent one-line paragraphs used as the punch. Industrial and procurement analogies — plants, specs, part numbers, purchase orders — applied to white-collar services problems. Counts things instead of describing them: eleven years, four hundred calls, eight times in ten, sixty days. Dry rather than energetic; never exhortative.",
-    "pet_peeves": [
-      "\"They went with someone cheaper\" from someone who can't name the competitor, the scope, or the number",
-      "adjectives supplied where a number belongs",
-      "giving away a two-hour diagnosis for free and calling it a sales cost",
-      "discounting for a marquee logo",
-      "copying a pricing tactic because everyone else does it",
-      "advice that fits in a tweet and skips the two steps before it"
-    ],
-    "signature_moves": [
-      "asks what they compared it to before discussing the number at all",
-      "converts a feeling into a figure by asking what happens if they do nothing until next year",
-      "answers a pricing question with a qualification question — who signs, what does the problem cost",
-      "quotes her own script verbatim and notes she hasn't changed the wording in years",
-      "reaches for a story from selling pumps into plants when the services example gets abstract",
-      "concedes in public, by name, when she has been argued out of a position"
-    ],
-    "refuses_to": [
-      "give a pricing tactic before knowing who signs and what the problem costs the buyer",
-      "help defend a number against a competitor the buyer has not actually named"
-    ]
-  },
-
-  "positions": [
+  "chips": [
     {
-      "claim": "A price objection is almost never about the price.",
-      "because": "By the time someone is arguing with your number, the failure happened weeks earlier: you're either talking to a person who can't sign, or you never got them to say what the problem costs them. There is no third cause.",
-      "pushback": "But they literally said it was too expensive → they said the polite thing. Ask what they compared it to — which firm, what scope, what number. If they can't answer, there was no comparison, and you're about to defend your price against a competitor who may not exist.",
-      "quote": "A price objection is almost never about the price. By the time somebody is arguing with your number, the real failure is upstream."
+      "text": "what happens when a PSP goes down mid-payout?",
+      "kb_section": "agoda/psp-routing#circuit-breakers",
+      "register": "skeptical",
+      "selected": true,
+      "why_it_lands": "Skeptical register aimed at failure modes, which is where payments seniority actually shows. The KB has breaker thresholds, the half-open retry policy, and what broke before they existed."
     },
     {
-      "claim": "Free discovery is a training program that teaches buyers your thinking is worth zero.",
-      "because": "Whatever you give away defines what the buyer thinks the category is worth. Hand over the diagnosis for free and you've classified the highest-margin thing you produce as a sales cost — then spend the relationship confused about why they resist strategy fees and never resist headcount.",
-      "pushback": "Nobody pays for a scoping call → correct, nobody does. They pay for an assessment with a deliverable and a date. Same call, different name, invoice attached. If you can't sell that, you were never going to sell the $140k engagement — you just hadn't found out yet.",
-      "quote": "Free discovery is a training program. It teaches the buyer that your thinking is worth zero and your doing is worth money."
+      "text": "does he have card issuing experience or just payments?",
+      "kb_section": "agoda/supplier-payouts#virtual-card-issuance",
+      "register": "skeptical",
+      "selected": true,
+      "why_it_lands": "The literal screening question at a card issuer. Answering it here removes the reason for a 20-minute call that ends in 'not quite a fit'."
     },
     {
-      "claim": "Never send a proposal that hasn't already been said out loud.",
-      "because": "A document can't handle an objection. If the number surprises someone in a PDF you find out three days later by email, or by silence. On a call you watch their face and deal with it in four seconds.",
-      "pushback": "Enterprise buyers require written proposals → then the document goes out after the call as a record of what you agreed, not as the pitch. Nobody has ever been talked into anything by a PDF, and plenty of people have been talked out of things by one.",
-      "quote": "Never send a proposal that hasn't already been said out loud. That's the rule. Every number, every phase, every exclusion — the buyer should have heard it from your mouth, on a call, with a chance to react, before it exists as a PDF."
+      "text": "why did he leave agoda?",
+      "kb_section": "career/timeline#agoda-exit",
+      "register": "blunt",
+      "selected": true,
+      "why_it_lands": "Blunt, and every recruiter asks it eventually. On the front page it signals nothing is being managed. One paragraph, no wandering."
     },
     {
-      "claim": "Three tiers is a discount nobody asked you for.",
-      "because": "Tiering is supposed to make the middle look reasonable next to the top. What it actually does is hand a cheaper option to a buyer who was ready to pay the top number, and nobody gets fired for taking the middle.",
-      "pushback": "Our conversion went up when we added tiers → conversion to the middle. Look at average deal size instead of close rate. Most firms that run that number stop tiering the same week.",
-      "quote": "Three tiers is a discount nobody asked you for. The theory is that the middle looks reasonable next to the top one. What actually happens is that a buyer who was ready to pay the top number takes the middle, because you offered it and it's cheaper and nobody gets fired for the middle option."
+      "text": "how did they reconcile payouts at scale?",
+      "kb_section": "agoda/reconciliation#spark-pipeline",
+      "register": "narrative",
+      "selected": false,
+      "why_it_lands": "Narrative. The KB has the job shape, the mismatch classes it caught, the manual queue it fed — with volumes, so there are numbers."
     },
     {
-      "claim": "Never lower the price without taking something out of the box.",
-      "because": "A number that moves because somebody asked tells the buyer the number was never real. They retest it at renewal, and every negotiation after that starts from the discounted figure instead of the true one.",
-      "pushback": "It's a marquee logo, it pays for itself in referrals → logos don't pay salaries and the referral value is unmeasurable at your size; nobody runs the counterfactual. Give them full price and a smaller box — fewer deliverables, less access, lighter reporting. Then the logo costs you delivery capacity instead of your pricing.",
-      "quote": "Never lower the price without taking something out of the box. Not once, not for logos, not at quarter end. The moment a number moves because somebody asked, you've told them the number was never real."
+      "text": "walk me through the virtual card issuing flow",
+      "kb_section": "agoda/supplier-payouts#issuance-flow",
+      "register": "narrative",
+      "selected": false,
+      "why_it_lands": "Clean opener: supplier → PSP → card → settlement. Broad rather than pointed — same ground as the first chip with less edge."
     },
     {
-      "claim": "By the time procurement is in the room, the pricing was decided months ago.",
-      "because": "Whoever writes the requirements picks the comparison set. The negotiation is theater over a spec you either shaped or didn't — and if you're learning about the RFP when it's published, you're column fodder.",
-      "pushback": "We came in cold through an RFP and won → then somebody shaped that document and it happened to fit you. Find out who. Otherwise you got lucky at a price a stranger set for you.",
-      "quote": "by the time procurement is in the room, the pricing was decided months ago. Whoever writes the requirements picks the comparison set."
+      "text": "how deep is his postgres actually?",
+      "kb_section": "postgres/opinions",
+      "register": "skeptical",
+      "selected": false,
+      "why_it_lands": "Strong skeptical phrasing, exactly how a technical screener thinks. Unbounded scope though — the answer crosses isolation levels, row locking and a war story without landing anywhere."
     },
     {
-      "claim": "Bill for the outcome wherever the buyer's system permits it — and take the hourly line where it doesn't.",
-      "because": "Hourly punishes you for getting faster and turns the buyer into an auditor of your timesheet. But some budget lines are literally denominated in hours — regulated work, government, enterprise staff-aug — and refusing a fixed-fee-incapable PO isn't principle, it's being unpurchasable.",
-      "pushback": "You used to say never bill hourly, ever → I did, and that was wrong, and I've said so in public. The principle held; the absolute didn't. Where you must go hourly, set the rate high enough that the timesheet argument is boring and cap the engagement so it can't drift into a body-shop relationship.",
-      "quote": "bill for the outcome wherever the buyer's system permits it. Where it doesn't, take the hourly line, set the rate high enough that the timesheet argument is boring, and cap the engagement so it can't become a body-shop relationship by drift."
+      "text": "is the web3 work real or a side project?",
+      "kb_section": "nodusart/advisory",
+      "register": "blunt",
+      "selected": false,
+      "why_it_lands": "Blunt and fair; the KB is honest that it's advisory on someone else's stack. Builds trust, but volunteers a limitation before the reader has committed to anything."
+    },
+    {
+      "text": "what's his ml background worth in 2026?",
+      "kb_section": "ml/currency",
+      "register": "blunt",
+      "selected": false,
+      "why_it_lands": "Targets the acknowledged gap head-on. The honest answer is disarming — but leading with your weakest material on the first screen is a different decision than answering it once they're inside."
     }
-  ]
+  ],
+
+  "quiz": [
+    {
+      "id": "q01",
+      "category": "motivation",
+      "question": "Which of these would he say he is actually after in a next role?",
+      "choices": [
+        "A larger team and a clearer path to a management title",
+        "Ownership of a system end to end, including its on-call, at staff scope with no management track",
+        "Greenfield work where nothing has been decided yet",
+        "The highest total compensation available, with scope as a secondary concern"
+      ],
+      "correct_index": 1,
+      "rationale": "He asks for end-to-end ownership including on-call, and says explicitly that he has managed people, was competent at it, and does not want to do it again. The other three are what a generic senior engineer says.",
+      "source_section": "career/timeline#what-next"
+    },
+    {
+      "id": "q02",
+      "category": "motivation",
+      "question": "How does he account for leaving Agoda?",
+      "choices": [
+        "The platform reached the state he wanted, the remaining work was operating it, and a reorg pointed at breadth he did not believe in",
+        "He burned out on the on-call load and needed to step away",
+        "His scope was reduced after a reorg and he was effectively managed out",
+        "He was recruited away by a materially better offer"
+      ],
+      "correct_index": 0,
+      "rationale": "One paragraph, no wandering. He is explicit that nobody was unkind, that he was not managed out, and that 'there is no story under it'.",
+      "source_section": "career/timeline#agoda-exit"
+    },
+    {
+      "id": "q03",
+      "category": "motivation",
+      "question": "A well-paid role comes with a mature vendor platform that owns the payments logic. What does he say?",
+      "choices": [
+        "He takes it — the vendor removes undifferentiated work and frees him for higher-leverage problems",
+        "He takes it if he can own the integration layer around the vendor",
+        "He turns it down: if nobody on the team can explain what happens on a failed capture, he is support staff with a better title",
+        "He asks for a vendor evaluation period before committing either way"
+      ],
+      "correct_index": 2,
+      "rationale": "He names this one specifically as a role he would decline. The first two are the pragmatic, consensus answers — which is exactly why they are the distractors.",
+      "source_section": "career/timeline#what-next"
+    },
+    {
+      "id": "q04",
+      "category": "judgement",
+      "question": "A provider's success rate has been 100% all morning, but its p99 latency tripled overnight and has stayed there. Based on how he thinks, what does he do?",
+      "choices": [
+        "Nothing yet — success rate is the health signal, and nothing is failing",
+        "Raise the client timeout so the slower calls have room to complete",
+        "Add worker capacity to absorb the slower calls while watching the error rate",
+        "Treat the latency shift as a breaker condition and route away from the provider"
+      ],
+      "correct_index": 3,
+      "rationale": "The PSP-B lesson generalised: availability and latency are the same metric at different thresholds, and a health signal that only measures failures you have already seen will miss the next one. The first three are the reasonable consensus responses — and they are what his own system did wrong.",
+      "source_section": "agoda/psp-routing#circuit-breakers"
+    },
+    {
+      "id": "q05",
+      "category": "judgement",
+      "question": "A team wants to replace a fixed set of error categories with a free-text reason field, so operators can be more precise. What is his objection?",
+      "choices": [
+        "Free text cannot be counted, alerted on, or automated against, so precision is bought by losing every aggregate",
+        "Free text invites inconsistent spelling and casing, which breaks reporting",
+        "Operators will write too little in practice, so the field ends up empty",
+        "It is a schema change that will be expensive to reverse later"
+      ],
+      "correct_index": 0,
+      "rationale": "He says the free-text version of the reconciliation mismatch field produces nine hundred distinct reasons, none of which can be counted, alerted on, or automated against. The distractors are the ordinary data-hygiene complaints anyone would make.",
+      "source_section": "agoda/reconciliation#spark-pipeline"
+    },
+    {
+      "id": "q06",
+      "category": "judgement",
+      "question": "You are designing a new service, and someone notes that operators will eventually ask 'how many of these are stuck?'. What does he say to do on day one?",
+      "choices": [
+        "Log the condition richly enough to answer the question from logs when it comes up",
+        "Make it an explicit state, because an operational state should not have to be inferred from a data state",
+        "Wait until an operator actually asks, then build a dashboard over the existing fields",
+        "Add a retry counter and a last-error field so the condition is at least recorded"
+      ],
+      "correct_index": 1,
+      "rationale": "His `deferred` regret stated as a rule. Option four is precisely the design he shipped and regrets; one and three are the sensible YAGNI answers most engineers give.",
+      "source_section": "agoda/psp-routing#deferred"
+    },
+    {
+      "id": "q07",
+      "category": "limits",
+      "question": "How does he describe his machine learning background?",
+      "choices": [
+        "Production ML engineer, currently practising",
+        "Self-taught but current, and comfortable owning a risk model",
+        "Undergraduate level and roughly seven years stale",
+        "Strong theoretically, with limited production exposure"
+      ],
+      "correct_index": 2,
+      "rationale": "Stated as a known gap, in those words. He adds that a candidate brief claiming otherwise has lied on his behalf — so this is also the no-invention test.",
+      "source_section": "ml/currency"
+    },
+    {
+      "id": "q08",
+      "category": "limits",
+      "question": "What is his actual relationship to NodusArt?",
+      "choices": [
+        "Founding engineer",
+        "Unpaid advisor — no commits, no equity, no on-call",
+        "Contract backend developer on their platform",
+        "He built their smart contracts"
+      ],
+      "correct_index": 1,
+      "rationale": "The knowledge base is deliberate about not upgrading this into 'Web3 engineer'. He says he would push back on a CV implying any of the other three.",
+      "source_section": "nodusart/advisory"
+    },
+    {
+      "id": "q09",
+      "category": "limits",
+      "question": "Which of these would he tell you he cannot do?",
+      "choices": [
+        "Operate a Kubernetes cluster he has been handed, and read its yaml",
+        "Design a Kubernetes cluster from scratch",
+        "Diagnose a slow Postgres query by reading its plan",
+        "Work inside a licensed payments entity, alongside compliance"
+      ],
+      "correct_index": 1,
+      "rationale": "He draws the line precisely between operating a cluster and designing one, and says he would defer to anyone who has done the latter. The other three are things he states he has done.",
+      "source_section": "limits/other"
+    },
+    {
+      "id": "q10",
+      "category": "substance",
+      "question": "What makes the payout idempotency key work, in his account of it?",
+      "choices": [
+        "It is unique per request, so no two calls can ever collide",
+        "It is registered with the provider before use, so the provider owns deduplication",
+        "It is deterministic and persisted before the provider call, so a retry reproduces it and a crash can still ask what happened",
+        "It is stored alongside the response, so a duplicate can be detected after the fact"
+      ],
+      "correct_index": 2,
+      "rationale": "Both properties are load-bearing and he explains why each fails alone. Option one is the per-request UUID he calls identical to having no key at all — and it is the answer most engineers give.",
+      "source_section": "agoda/supplier-payouts#idempotency"
+    },
+    {
+      "id": "q11",
+      "category": "substance",
+      "question": "Why did he reject SERIALIZABLE for the payout queue?",
+      "choices": [
+        "Postgres cannot sustain it at that write volume",
+        "Serialization failures became a retry storm, and the correctness it bought was already explicit in the idempotency key and the advisory lock",
+        "The ORM in use did not expose the isolation level",
+        "It was never seriously evaluated — READ COMMITTED was the existing convention"
+      ],
+      "correct_index": 1,
+      "rationale": "He calls this the most arguable decision in the system, defends it without claiming it is obvious, and states the counter-argument against himself.",
+      "source_section": "postgres/queue-workers"
+    },
+    {
+      "id": "q12",
+      "category": "substance",
+      "question": "Every provider in a corridor is unavailable. What did he build the system to do, and what does he wish he had done?",
+      "choices": [
+        "Fail the payout and notify the supplier; he wishes the notification had been clearer",
+        "Fall back to bank transfer; he wishes the fallback had been automatic",
+        "Park it in an explicit deferred state for a retry sweep — and he wishes that state had existed from day one rather than eighteen months in",
+        "Hold it in the queue with a retry counter; he wishes the backoff had been tuned sooner"
+      ],
+      "correct_index": 2,
+      "rationale": "Option four is what the system actually did for eighteen months, and it is the thing he regrets rather than the thing he defends — which is what separates having read him from having skimmed him.",
+      "source_section": "agoda/psp-routing#deferred"
+    }
+  ],
+
+  "pre_roll": {
+    "headline": "Sixty minutes. Starts when you hit send.",
+    "bullets": [
+      "Full timeline, four employers, gap included",
+      "Six systems I built, at architecture depth",
+      "Bring your band — it'll say if it clears",
+      "Opinions I'll defend and can't be talked out of"
+    ]
+  }
 }

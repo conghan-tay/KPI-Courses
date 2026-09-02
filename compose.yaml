@@ -1,10 +1,10 @@
-name: kpi-courses
+name: reverse-interview
 
 # Journey 1 of the chat-native tutoring POC (docs/productDocs/POC_UserJourney.md):
-# a Specialist turns raw material into a published course.
+# a candidate turns documents into a published knowledge base.
 #
 #   web      Next.js screens, and a BFF that turns uploads into text
-#   gateway  the Go API — courses, publishing, the ingest SSE stream, Postgres
+#   gateway  the Go API — knowledge bases, publishing, the ingest SSE stream, Postgres
 #   worker   the LangGraph ingestion pipeline, as Temporal activities
 #
 # MODEL_PROVIDER=fake needs no API key and replays docs/productDocs/fixtures, so
@@ -35,15 +35,15 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       API_KEY: ${API_KEY:-local-api-key}
       GATEWAY_PORT: "8080"
-      DATABASE_URL: postgres://courses:courses@postgres:5432/courses?sslmode=disable
+      DATABASE_URL: postgres://kb:kb@postgres:5432/kb?sslmode=disable
       REDIS_URL: redis://redis:6379/0
       TEMPORAL_ADDRESS: temporal:7233
       TEMPORAL_NAMESPACE: default
-      TEMPORAL_TASK_QUEUE: course-ingest
+      TEMPORAL_TASK_QUEUE: kb-ingest
       INGEST_TIMEOUT_MINUTES: ${INGEST_TIMEOUT_MINUTES:-20}
       # Retained for Journey 3's tutor; nothing reads these vectors back yet.
       CHROMA_URL: http://chroma:8000
-      CHROMA_COLLECTION: ${CHROMA_COLLECTION:-course_knowledge}
+      CHROMA_COLLECTION: ${CHROMA_COLLECTION:-kb_sections_vectors}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
@@ -60,7 +60,7 @@ services:
     healthcheck:
       # Liveness, not readiness: the web service only needs the API to be up, and
       # gating it on Temporal would mean a Temporal blip stops the studio from
-      # rendering a course list Postgres could answer perfectly well.
+      # rendering a list Postgres could answer perfectly well.
       test: ["CMD", "/gateway", "-healthcheck"]
       interval: 5s
       timeout: 5s
@@ -83,13 +83,14 @@ services:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
-      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-kpi-courses}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-reverse-interview}
       TEMPORAL_ADDRESS: temporal:7233
       TEMPORAL_NAMESPACE: default
-      TEMPORAL_TASK_QUEUE: course-ingest
+      TEMPORAL_TASK_QUEUE: kb-ingest
       FIXTURE_DIR: /app/fixtures
-      MAX_LESSONS: ${MAX_LESSONS:-9}
-      MAX_POSITIONS: ${MAX_POSITIONS:-8}
+      MAX_SECTIONS: ${MAX_SECTIONS:-16}
+      MAX_CHIPS: ${MAX_CHIPS:-8}
+      MAX_QUIZ_ITEMS: ${MAX_QUIZ_ITEMS:-12}
       MAX_SOURCE_CHARS: ${MAX_SOURCE_CHARS:-400000}
     depends_on:
       temporal:
@@ -108,19 +109,19 @@ services:
     # applies migrations at boot, so there is no init script here.
     image: postgres:18-alpine
     environment:
-      POSTGRES_USER: courses
-      POSTGRES_PASSWORD: courses
-      POSTGRES_DB: courses
+      POSTGRES_USER: kb
+      POSTGRES_PASSWORD: kb
+      POSTGRES_DB: kb
     volumes:
       # Postgres 18 stores data in a major-version subdirectory and wants the mount one
       # level up. Mounting at /var/lib/postgresql/data — correct for 17 and earlier —
       # makes the image refuse to start rather than silently misplace the data.
       - postgres_data:/var/lib/postgresql
     ports:
-      # Exposed so `make seed-course` and psql work from the host.
+      # Exposed so `make seed-kb` and psql work from the host.
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U courses -d courses"]
+      test: ["CMD-SHELL", "pg_isready -U kb -d kb"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -153,7 +154,7 @@ services:
     ports:
       - "7233:7233"
       # Temporal Web UI. 8233 rather than its default 8080 to leave that to the gateway.
-      # Worth opening during an ingestion: one activity per source file and per lesson.
+      # Worth opening during an ingestion: one activity per document and per section.
       - "8233:8233"
     healthcheck:
       test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
@@ -164,8 +165,8 @@ services:
 
   mcp-tools:
     # Parked. Nothing in Journey 1 calls it, and the demo tools it serves belong
-    # to the support-ticket reference app. It stays because Journey 3's agent
-    # loop is four tools (get_lesson, mark_progress, quiz, ask_specialist) and
+    # to the support-ticket reference app. It stays because Journey 2's hour-long
+    # chat will need tools (fetch a section, run the gate, meter the cost) and
     # this is where they will live.
     build:
       context: .

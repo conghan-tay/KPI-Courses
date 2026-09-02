@@ -18,7 +18,7 @@ service. Only the **web** app receives a public domain.
 | `Postgres` | Railway managed | 5432 | Private |
 | `Redis` | Railway managed | 6379 | Private |
 
-The gateway is **not** public, and that is not tidiness. It trusts the `X-Specialist-Id` header its
+The gateway is **not** public, and that is not tidiness. It trusts the `X-Candidate-Id` header its
 caller sends — the server-side half of the `SIGN IN AS` switcher — so anything that can reach it
 with the API key can act as any user. The web app is its only legitimate client until real
 authentication replaces that header. See the README.
@@ -27,8 +27,8 @@ Durable execution comes from **Temporal Cloud**, not from a Railway service. Run
 cluster on Railway is possible but is a poor use of a PaaS: it wants its own database, several
 roles, and careful upgrades. Temporal Cloud's free tier is sufficient here.
 
-Postgres is required. It holds the courses, and losing it loses the product. Temporal holds runs in
-flight and the record of how each course was built.
+Postgres is required. It holds the knowledge bases, and losing it loses the product. Temporal holds runs in
+flight and the record of how each knowledge base was built.
 
 `chroma` and `mcp-tools` are in `compose.yaml` but are **not** deployed here. Nothing in Journey 1
 reads a vector or calls a tool; they exist for Journey 3. Deploy them when you build it.
@@ -54,7 +54,7 @@ Railway's free plan allows **five services**. This topology needs three repo-bac
 
 ```bash
 railway login
-railway init --name kpi-courses-fork      # creates and links the project
+railway init --name reverse-interview-fork      # creates and links the project
 railway status --json
 ```
 
@@ -139,13 +139,13 @@ MODEL_PROVIDER=anthropic
 MODEL_NAME=claude-opus-5
 ANTHROPIC_API_KEY=<key>
 LANGSMITH_TRACING=true
-LANGSMITH_PROJECT=kpi-courses-railway
+LANGSMITH_PROJECT=reverse-interview-railway
 LANGSMITH_API_KEY=<key>
 TEMPORAL_ADDRESS=<namespace>.<account>.tmprl.cloud:7233
 TEMPORAL_NAMESPACE=<namespace>.<account>
 TEMPORAL_API_KEY=<temporal cloud api key>
 TEMPORAL_TLS=true
-TEMPORAL_TASK_QUEUE=course-ingest
+TEMPORAL_TASK_QUEUE=kb-ingest
 MAX_LESSONS=9
 MAX_POSITIONS=8
 ```
@@ -163,7 +163,7 @@ TEMPORAL_ADDRESS=<namespace>.<account>.tmprl.cloud:7233
 TEMPORAL_NAMESPACE=<namespace>.<account>
 TEMPORAL_API_KEY=<temporal cloud api key>
 TEMPORAL_TLS=true
-TEMPORAL_TASK_QUEUE=course-ingest
+TEMPORAL_TASK_QUEUE=kb-ingest
 INGEST_TIMEOUT_MINUTES=20
 ```
 
@@ -228,12 +228,12 @@ railway logs --service gateway --lines 100
 ```bash
 curl -sS https://<your-domain>/studio                            # 200, the empty studio
 curl -sS -o /dev/null -w '%{http_code}\n' \
-  https://<your-domain>/api/courses                              # 200 through the proxy
+  https://<your-domain>/api/kb                              # 200 through the proxy
 ```
 
 Then walk Journey 1 in a browser: `BUILD A COURSE`, drop
 `docs/productDocs/fixtures/source.md`, and watch the ingestion panel. With a real model this takes
-90–150 seconds and streams one status line per source file and one per lesson.
+90–150 seconds and streams one status line per document and one per section.
 
 Confirm the gateway is genuinely unreachable from outside:
 
@@ -247,19 +247,19 @@ The proof that durable execution works is a **worker restart mid-ingestion**:
 ```bash
 # start an ingestion in the browser, then, while it is running:
 railway redeploy --service worker --yes
-# the run resumes on the new container and the course still lands
+# the run resumes on the new container and the knowledge base still lands
 ```
 
 And a **gateway restart mid-ingestion**, which exercises the boot reconciler:
 
 ```bash
 railway redeploy --service gateway --yes
-# the browser loses its stream, but the course still reaches `ready`:
+# the browser loses its stream, but the knowledge base still reaches `ready`:
 # the new container re-attaches a completion watcher to every in-flight run.
 ```
 
 Watch the same run in the Temporal Cloud UI. Its history shows one activity per source file and one
-per lesson, each with its own retry policy — which is the visible proof that a flaky call on lesson
+per section, each with its own retry policy — which is the visible proof that a flaky call on section
 four does not restart the ingestion.
 
 Build logs:
@@ -288,18 +288,18 @@ railway logs --service worker --environment production --build --lines 200
 
 ## Notes and caveats
 
-- **Replace the trusted `X-Specialist-Id` header before real users.** Everything above assumes the
+- **Replace the trusted `X-Candidate-Id` header before real users.** Everything above assumes the
   gateway is private and its only caller is the web app. That assumption is the whole authorization
   model right now.
 - An ingestion holds an SSE connection open for the length of the run. If you put a proxy or CDN in
   front of the web app, check its idle timeout: anything under `INGEST_TIMEOUT_MINUTES` will sever
-  the status stream mid-run. The course still completes — the gateway persists from a watcher that
-  outlives the request — but the Specialist watches a stalled panel.
+  the status stream mid-run. The run still completes — the gateway persists from a watcher that
+  outlives the request — but the candidate watches a stalled panel.
 - Scale `worker` freely. The pipeline holds no cross-activity state, and every node is a pure
   function of the workflow state passed into it.
 - `GET /readyz` verifies Temporal reachability. `/healthz` deliberately does not, so a Temporal blip
   cannot cause a restart loop.
-- Back up Postgres and verify a restore before the first real Specialist signs up. Set a retention
+- Back up Postgres and verify a restore before the first real candidate signs up. Set a retention
   period on the Temporal namespace: closed histories are the record of which sources produced which
   positions.
 - `.env` is gitignored and is not copied by any Dockerfile, so local secrets never enter the images.

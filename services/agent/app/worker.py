@@ -1,8 +1,8 @@
 """Temporal worker entrypoint: `python -m app.worker`.
 
 This process has no HTTP server and no database. It polls a Temporal task queue,
-executes the LangGraph nodes registered below as activities, and returns a course to
-whoever started the run. The public API and all persistence live in the Go gateway.
+executes the LangGraph nodes registered below as activities, and returns a knowledge base
+to whoever started the run. The public API and all persistence live in the Go gateway.
 """
 
 import asyncio
@@ -18,13 +18,13 @@ from .core.logging import configure_logging
 from .core.settings import get_settings
 from .graph.ingest import IngestNodes, build_ingest_graph
 from .graph.progress import TemporalProgressReporter
-from .graph.soften import SoftenNodes, build_soften_graph
+from .graph.rephrase import RephraseNodes, build_rephrase_graph
 from .temporal.client import connect
-from .temporal.course_workflow import (
+from .temporal.kb_workflow import (
     INGEST_GRAPH,
-    SOFTEN_GRAPH,
-    CourseIngestionWorkflow,
-    SoftenClaimWorkflow,
+    REPHRASE_GRAPH,
+    KnowledgeBaseIngestionWorkflow,
+    RephraseChipWorkflow,
 )
 
 logger = structlog.get_logger(__name__)
@@ -48,17 +48,17 @@ async def main() -> None:
         model=model,
         progress=TemporalProgressReporter(client),
     )
-    soften_nodes = SoftenNodes(model)
+    rephrase_nodes = RephraseNodes(model)
 
     worker = Worker(
         client,
         task_queue=settings.temporal_task_queue,
-        workflows=[CourseIngestionWorkflow, SoftenClaimWorkflow],
+        workflows=[KnowledgeBaseIngestionWorkflow, RephraseChipWorkflow],
         plugins=[
             LangGraphPlugin(
                 graphs={
                     INGEST_GRAPH: build_ingest_graph(ingest_nodes),
-                    SOFTEN_GRAPH: build_soften_graph(soften_nodes),
+                    REPHRASE_GRAPH: build_rephrase_graph(rephrase_nodes),
                 }
             )
         ],

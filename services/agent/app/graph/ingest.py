@@ -1,16 +1,20 @@
-"""The course-ingestion graph.
+"""The knowledge-base ingestion graph.
 
-POC_UserJourney.md sketches Journey 1's ingestion as "a single LLM call, streamed,
-~30–60s". This is not that, and the reason is docs/productDocs/fixtures/README.md.
+Not one model call, and the reason is docs/productDocs/fixtures/README.md.
 
 The fixture's traps are not prompt problems, they are attention problems. One pass over
-six heterogeneous sources has to hold "who is speaking" (A3), "what was walked back
-later" (A4) and "what is merely correct" (A5) in mind at once, and it drops one. Reading
-each source alone and resolving afterwards gives every rule a step where it is the only
-thing being asked.
+seven heterogeneous documents has to hold "record scope exactly as stated" (B3), "the gap
+stays in" (B4) and "the stated limits are not caveats, they are the point" (B5) in mind
+at once, and it drops one. Reading each document alone and deciding afterwards gives
+every rule a step where it is the only thing being asked.
+
+The order also encodes a hard dependency the tutoring pipeline this replaces did not
+have: **chips and quiz items cite sections by id, so the sections must exist first.**
+Section planning and writing therefore run ahead of both, and the reference check that
+follows is an equality test rather than a hope.
 
 Under Temporal that shape pays a second time. Each node is an activity with its own
-timeout and retry policy, so a flaky model call on lesson four is retried in isolation
+timeout and retry policy, so a flaky model call on section nine is retried in isolation
 rather than restarting the whole ingestion, and one enormous generation cannot hit a
 max-token wall.
 """
@@ -22,20 +26,22 @@ import structlog
 from langgraph.graph import END, START, StateGraph
 from temporalio.common import RetryPolicy
 
-from ..core.course_schemas import (
-    CandidateClaim,
-    Lesson,
-    LessonPlan,
-    Position,
+from ..core.ingest_model import IngestionModel
+from ..core.kb_schemas import (
+    QUIZ_CHOICE_COUNT,
+    Chip,
+    PreRoll,
+    QuizCategory,
+    QuizItem,
+    Section,
+    SectionPlan,
     Segment,
     SegmentReading,
-    SourceKind,
-    VoiceCard,
+    section_id,
 )
-from ..core.ingest_model import IngestionModel
 from ..core.safety import inspect_user_text
 from ..core.settings import Settings
-from . import anchors
+from . import refs
 from .ingest_state import IngestState
 from .progress import NullProgressReporter, ProgressReporter
 
@@ -47,15 +53,15 @@ logger = structlog.get_logger(__name__)
 # use that only for cheap, deterministic, side-effect-free work.
 LLM_NODE: dict[str, Any] = {
     "execute_in": "activity",
-    # Writing a lesson body is the longest single call in the pipeline.
+    # Writing a section body is the longest single call in the pipeline.
     "start_to_close_timeout": timedelta(seconds=300),
     "retry_policy": RetryPolicy(maximum_attempts=3),
 }
 WORKFLOW_NODE: dict[str, Any] = {"execute_in": "workflow"}
 
 # The header lib/extract.ts writes between concatenated uploads. Splitting on it is what
-# lets the graph read a manuscript and a podcast transcript as separate things, which is
-# the whole basis of the attribution rule.
+# lets the graph read a CV and an architecture write-up as separate things, which is the
+# whole basis of reading each document on its own.
 SOURCE_HEADER = "# SOURCE FILE: "
 
 
@@ -84,36 +90,41 @@ class IngestNodes:
     async def sanitize(self, state: IngestState) -> dict[str, Any]:
         """Normalise the corpus and flag injection attempts.
 
-        This is somebody else's text, some of it a transcript of a stranger talking, and
-        all of it is about to be put in front of a model with instructions. Flags travel
-        with the run rather than aborting it: a course is not a threat because one
-        sentence in a podcast looked like a prompt.
+        This is a person's own material, some of it written by other people about them,
+        and all of it is about to be put in front of a model with instructions. Flags
+        travel with the run rather than aborting it: a knowledge base is not a threat
+        because one sentence in a performance review looked like a prompt.
         """
 
         result = inspect_user_text(state["source_text"], self._settings.max_source_chars)
         if result.flags:
             logger.warning(
                 "ingest_safety_flags",
-                course_id=state.get("course_id"),
+                kb_id=state.get("kb_id"),
                 flags=list(result.flags),
             )
         return {
             "source_text": result.sanitized_text,
             "safety_flags": list(result.flags),
             "segment_cursor": 0,
-            "lesson_cursor": 0,
+            "section_cursor": 0,
             "repair_attempts": 0,
             "summaries": [],
-            "candidates": [],
-            "craft_points": [],
-            "lessons": [],
+            "section_candidates": [],
+            "facts": [],
+            "opinions": [],
+            "limits": [],
+            "motivations": [],
+            "sections": [],
+            "chips": [],
+            "quiz": [],
             "status_lines": [],
         }
 
     # ── 2. segment ───────────────────────────────────────────────────────────
 
     async def segment(self, state: IngestState) -> dict[str, Any]:
-        """Split the corpus back into the files it was concatenated from. Pure."""
+        """Split the corpus back into the documents it was concatenated from. Pure."""
 
         segments = split_corpus(
             state["source_text"],
@@ -122,14 +133,31 @@ class IngestNodes:
         )
         return {"segments": [item.model_dump() for item in segments]}
 
+    async def after_segment(self, state: IngestState) -> Literal["read_segment", "generate_chips"]:
+        """Skip the whole reading phase when there is nothing to read.
+
+        `split_corpus` returns nothing for a corpus that is only whitespace, and
+        `read_segment` would index into an empty list. The gateway rejects a source text
+        under 200 trimmed characters, so this is unreachable through the product — but a
+        graph that only holds because of a check two services away is one refactor from
+        an IndexError that Temporal retries three times before failing the run, turning
+        an empty upload into a crashed pipeline.
+
+        Straight to `generate_chips` rather than through `plan_sections`, for the same
+        reason `after_plan` skips the write loop: planning from nothing is a model call
+        whose only possible output is invention.
+        """
+
+        return "read_segment" if state.get("segments") else "generate_chips"
+
     # ── 3. read_segment (loops) ──────────────────────────────────────────────
 
     async def read_segment(self, state: IngestState) -> dict[str, Any]:
-        """Read one source on its own, and advance the cursor.
+        """Read one document on its own, and advance the cursor.
 
-        A self-loop rather than a parallel map: each file gets its own activity, its own
-        retry and its own honest status line, and the reads stay ordered so a later
-        newsletter can be recognised as walking back an earlier manuscript.
+        A self-loop rather than a parallel map: each document gets its own activity, its
+        own retry and its own honest status line, and the reads stay ordered so a later
+        document can be recognised as covering ground an earlier one already did.
         """
 
         segments = [Segment.model_validate(row) for row in state["segments"]]
@@ -142,246 +170,297 @@ class IngestNodes:
 
         summaries = list(state.get("summaries", []))
         reading = await self._model.read_segment(
-            current, state.get("specialist_name", ""), cursor, total, summaries
+            current, state.get("candidate_name", ""), cursor, total, summaries
         )
         reading = _stamp_reading(reading, current.name)
 
         return {
             "segment_cursor": cursor + 1,
             "summaries": summaries + [reading.summary or current.name],
-            "candidates": list(state.get("candidates", []))
-            + [candidate.model_dump() for candidate in reading.candidates],
-            "craft_points": list(state.get("craft_points", [])) + reading.craft_points,
+            "section_candidates": list(state.get("section_candidates", []))
+            + [candidate.model_dump() for candidate in reading.section_candidates],
+            "facts": list(state.get("facts", [])) + reading.facts,
+            "opinions": list(state.get("opinions", [])) + reading.opinions_held,
+            "limits": list(state.get("limits", [])) + reading.stated_limits,
+            "motivations": list(state.get("motivations", [])) + reading.motivations,
             "status_lines": list(state.get("status_lines", [])) + [line],
         }
 
-    async def after_read(self, state: IngestState) -> Literal["read_segment", "resolve_positions"]:
+    async def after_read(self, state: IngestState) -> Literal["read_segment", "plan_sections"]:
         if state.get("segment_cursor", 0) < len(state.get("segments", [])):
             return "read_segment"
-        return "resolve_positions"
+        return "plan_sections"
 
-    # ── 4. resolve_positions ─────────────────────────────────────────────────
+    # ── 4. plan_sections ─────────────────────────────────────────────────────
 
-    async def resolve_positions(self, state: IngestState) -> dict[str, Any]:
-        """Turn candidate claims into the positions the course is sold on.
+    async def plan_sections(self, state: IngestState) -> dict[str, Any]:
+        """Decide the shape of the knowledge base before writing any of it."""
 
-        The guest filter runs here in code, not only in the prompt. `by_author=false`
-        candidates are dropped before the resolver ever sees them, so a model that
-        forgets rule 1 cannot produce a tutor that argues a guest's position in the
-        Specialist's voice — assertion A3, which the fixture calls the most expensive
-        one to ship broken.
-
-        A rebutted guest claim is not lost by doing this: the read step records the
-        author's rebuttal as its own candidate, with by_author=true.
-        """
-
-        line = "SEPARATING OPINION FROM CRAFT…"
+        line = "PLANNING THE KNOWLEDGE BASE…"
         await self._progress.report(line)
 
-        all_candidates = [CandidateClaim.model_validate(row) for row in state.get("candidates", [])]
-        mine = [candidate for candidate in all_candidates if candidate.by_author]
-        dropped = len(all_candidates) - len(mine)
-        if dropped:
-            logger.info(
-                "dropped_candidates_by_attribution",
-                course_id=state.get("course_id"),
-                dropped=dropped,
-            )
-
-        status = list(state.get("status_lines", [])) + [line]
-
-        if not mine:
-            # A legitimate outcome, not a failure: POC_UserJourney.md says a corpus with
-            # no contested claims returns fewer, and never invents them.
-            return {"positions": [], "status_lines": status}
-
-        resolved = await self._model.resolve_positions(mine, state.get("specialist_name", ""))
-        positions = dedupe_positions(resolved.positions)[: self._settings.max_positions]
-
-        found = f"EXTRACTING POSITIONS · {len(positions)} FOUND"
-        await self._progress.report(found)
-        return {
-            "positions": [position.model_dump() for position in positions],
-            "status_lines": status + [found],
-        }
-
-    # ── 5. verify_quotes ─────────────────────────────────────────────────────
-
-    async def verify_quotes(self, state: IngestState) -> dict[str, Any]:
-        """Assertion A2, run inside the product rather than only in a test. Pure."""
-
-        positions = [Position.model_validate(row) for row in state.get("positions", [])]
-        unanchored = anchors.unanchored_indexes(
-            [position.quote for position in positions], state["source_text"]
-        )
-        if unanchored:
-            logger.info(
-                "unanchored_quotes",
-                course_id=state.get("course_id"),
-                count=len(unanchored),
-                total=len(positions),
-            )
-        return {"unanchored": unanchored}
-
-    async def after_verify(self, state: IngestState) -> Literal["repair_quotes", "plan_lessons"]:
-        if (
-            state.get("unanchored")
-            and state.get("repair_attempts", 0) < self._settings.max_quote_repairs
-        ):
-            return "repair_quotes"
-        return "plan_lessons"
-
-    # ── 6. repair_quotes ─────────────────────────────────────────────────────
-
-    async def repair_quotes(self, state: IngestState) -> dict[str, Any]:
-        """One bounded attempt to find a real anchor for the positions that lack one."""
-
-        line = "CHECKING QUOTE ANCHORS…"
-        await self._progress.report(line)
-
-        positions = [Position.model_validate(row) for row in state.get("positions", [])]
-        unanchored = list(state.get("unanchored", []))
-        broken = [positions[index] for index in unanchored]
-
-        repaired = await self._model.repair_quotes(broken, state["source_text"])
-        # Matched by claim rather than by position: the model is asked for quotes, and
-        # trusting it to also preserve list order would be one silent reordering away
-        # from attaching the wrong evidence to the wrong stance.
-        by_claim = {item.claim: item.quote for item in repaired.positions}
-        for index in unanchored:
-            replacement = by_claim.get(positions[index].claim)
-            if replacement:
-                positions[index].quote = replacement
-
-        return {
-            "positions": [position.model_dump() for position in positions],
-            "repair_attempts": state.get("repair_attempts", 0) + 1,
-            "status_lines": list(state.get("status_lines", [])) + [line],
-        }
-
-    # ── 7. plan_lessons ──────────────────────────────────────────────────────
-
-    async def plan_lessons(self, state: IngestState) -> dict[str, Any]:
-        line = "PLANNING THE SYLLABUS…"
-        await self._progress.report(line)
-
-        positions = [Position.model_validate(row) for row in state.get("positions", [])]
-        planned = await self._model.plan_lessons(
-            state.get("specialist_name", ""),
+        planned = await self._model.plan_sections(
+            state.get("candidate_name", ""),
             state.get("title", ""),
             state.get("tagline", ""),
             list(state.get("summaries", [])),
-            list(state.get("craft_points", [])),
-            [position.claim for position in positions],
+            list(state.get("section_candidates", [])),
+            list(state.get("facts", [])),
+            list(state.get("opinions", [])),
+            list(state.get("limits", [])),
+            list(state.get("motivations", [])),
         )
-        # Capped in code as well as in the prompt: a syllabus of fifteen lessons is one
-        # nobody finishes, whatever the model thought.
-        plans = planned.lessons[: self._settings.max_lessons]
+        # Deduplicated and capped in code as well as in the prompt. Two sections sharing
+        # an id would make every reference to it a coin flip, and a forty-section
+        # knowledge base is one nobody reads, whatever the model thought.
+        plans = dedupe_plans(planned.sections)[: self._settings.max_sections]
         return {
-            "lesson_plans": [plan.model_dump() for plan in plans],
-            "lesson_cursor": 0,
-            "lessons": [],
+            "section_plans": [plan.model_dump() for plan in plans],
+            "section_cursor": 0,
+            "sections": [],
             "status_lines": list(state.get("status_lines", [])) + [line],
         }
 
-    async def after_plan(self, state: IngestState) -> Literal["write_lesson", "read_voice"]:
-        return "write_lesson" if state.get("lesson_plans") else "read_voice"
+    async def after_plan(self, state: IngestState) -> Literal["write_section", "generate_chips"]:
+        return "write_section" if state.get("section_plans") else "generate_chips"
 
-    # ── 8. write_lesson (loops) ──────────────────────────────────────────────
+    # ── 5. write_section (loops) ─────────────────────────────────────────────
 
-    async def write_lesson(self, state: IngestState) -> dict[str, Any]:
-        """Write one lesson body, from the sources its plan named.
+    async def write_section(self, state: IngestState) -> dict[str, Any]:
+        """Write one section body, from the documents its plan named.
 
-        One activity per lesson. That is what makes "WRITING LESSON 4 OF 7" an honest
-        status line rather than a guess, what lets lesson four's flaky call retry
-        without redoing lessons one to three, and what keeps a seven-lesson course from
-        arriving as one generation against a max-token ceiling.
+        One activity per section. That is what makes "WRITING SECTION 4 OF 14" an honest
+        status line rather than a guess, what lets section four's flaky call retry
+        without redoing one to three, and what keeps a fourteen-section knowledge base
+        from arriving as one generation against a max-token ceiling.
         """
 
-        plans = [LessonPlan.model_validate(row) for row in state["lesson_plans"]]
-        cursor = state.get("lesson_cursor", 0)
+        plans = [SectionPlan.model_validate(row) for row in state["section_plans"]]
+        cursor = state.get("section_cursor", 0)
         plan = plans[cursor]
         total = len(plans)
 
-        line = f"WRITING LESSON {cursor + 1} OF {total} · {plan.title}"
+        line = f"WRITING SECTION {cursor + 1} OF {total} · {plan.title}"
         await self._progress.report(line)
 
         segments = [Segment.model_validate(row) for row in state.get("segments", [])]
-        written = await self._model.write_lesson(
+        written = await self._model.write_section(
             plan,
             cursor + 1,
             total,
             material_for(plan, segments, self._settings.max_segment_chars),
-            "; ".join(state.get("summaries", [])[:2]),
         )
+        # The plan owns the id and the title. A writer that renames its own section
+        # invalidates every chip and quiz item that was about to cite it.
+        written.path = plan.path
+        written.anchor = plan.anchor
         written.title = written.title or plan.title
-        written.objective = written.objective or plan.objective
+        written.summary = written.summary or plan.summary
+        written.source_names = plan.source_names
 
         return {
-            "lesson_cursor": cursor + 1,
-            "lessons": list(state.get("lessons", [])) + [written.model_dump()],
+            "section_cursor": cursor + 1,
+            "sections": list(state.get("sections", [])) + [written.model_dump()],
             "status_lines": list(state.get("status_lines", [])) + [line],
         }
 
-    async def after_write(self, state: IngestState) -> Literal["write_lesson", "read_voice"]:
-        if state.get("lesson_cursor", 0) < len(state.get("lesson_plans", [])):
-            return "write_lesson"
-        return "read_voice"
+    async def after_write(self, state: IngestState) -> Literal["write_section", "generate_chips"]:
+        if state.get("section_cursor", 0) < len(state.get("section_plans", [])):
+            return "write_section"
+        return "generate_chips"
 
-    # ── 9. read_voice ────────────────────────────────────────────────────────
+    # ── 6. generate_chips ────────────────────────────────────────────────────
 
-    async def read_voice(self, state: IngestState) -> dict[str, Any]:
-        line = "READING VOICE…"
-        await self._progress.report(line)
+    async def generate_chips(self, state: IngestState) -> dict[str, Any]:
+        """Eight questions a recruiter would type first, three of them pre-selected.
 
-        segments = [Segment.model_validate(row) for row in state.get("segments", [])]
-        # The opening of each file rather than all of it: register shows up in the first
-        # few hundred words, and sending the whole corpus again to learn how somebody
-        # sounds is an expensive way to learn nothing extra.
-        excerpts = [f"{item.name}\n{item.text[:4_000]}" for item in segments[:6]]
-        voice = await self._model.read_voice(state.get("specialist_name", ""), excerpts)
-        return {
-            "voice_card": voice.model_dump(),
-            "status_lines": list(state.get("status_lines", [])) + [line],
-        }
-
-    # ── 10. assemble ─────────────────────────────────────────────────────────
-
-    async def assemble(self, state: IngestState) -> dict[str, Any]:
-        """Final shape: ordinals, and one last anchor check. Pure.
-
-        The last check matters because repair is bounded. A quote that still is not in
-        the source after the repair pass is cleared rather than shipped: the review
-        screen renders an unanchored position with a warning, so the Specialist sees
-        that this stance has no evidence behind it instead of a fabricated citation.
-        The stance itself survives — dropping it would silently lose something the
-        author may well believe.
+        The selection is made here rather than left to the candidate's first visit,
+        because a review screen that opens with nothing chosen and a publish button that
+        refuses to work is a worse first impression than three sensible defaults they
+        can change.
         """
 
-        positions = [Position.model_validate(row) for row in state.get("positions", [])]
-        for index in anchors.unanchored_indexes(
-            [position.quote for position in positions], state["source_text"]
-        ):
-            positions[index].quote = ""
+        line = "DRAFTING OPENING QUESTIONS…"
+        await self._progress.report(line)
 
-        lessons = [Lesson.model_validate(row) for row in state.get("lessons", [])]
-        for ordinal, lesson in enumerate(lessons, start=1):
-            lesson.ord = ordinal
+        sections = _section_digest(state)
+        if not sections:
+            return {"chips": [], "status_lines": list(state.get("status_lines", [])) + [line]}
 
-        if len(lessons) < 5:
-            # Not an error: a thin corpus is allowed to produce a thin course, and the
-            # review screen lets the Specialist fix it. Worth a log line, because it is
-            # also what a truncated model response looks like.
-            logger.warning("thin_syllabus", course_id=state.get("course_id"), lessons=len(lessons))
-        if len(positions) < anchors.THIN_POSITIONS_THRESHOLD:
+        generated = await self._model.generate_chips(state.get("candidate_name", ""), sections)
+        chips = generated.chips[: self._settings.max_chips]
+        chips = select_default_chips(chips, refs.SELECTED_CHIPS)
+
+        found = f"DRAFTING OPENING QUESTIONS · {len(chips)} FOUND"
+        await self._progress.report(found)
+        return {
+            "chips": [chip.model_dump() for chip in chips],
+            "status_lines": list(state.get("status_lines", [])) + [line, found],
+        }
+
+    # ── 7. generate_quiz ─────────────────────────────────────────────────────
+
+    async def generate_quiz(self, state: IngestState) -> dict[str, Any]:
+        """Twelve questions, three per category, for the booking gate.
+
+        Malformed items are dropped in code rather than only discouraged in the prompt:
+        the gate renders exactly four options and scores one of them, so an item with
+        three choices or an out-of-range answer is not a weak question, it is a broken
+        screen.
+        """
+
+        line = "WRITING THE GATE QUIZ…"
+        await self._progress.report(line)
+
+        sections = _section_digest(state)
+        if not sections:
+            return {"quiz": [], "status_lines": list(state.get("status_lines", [])) + [line]}
+
+        generated = await self._model.generate_quiz(
+            state.get("candidate_name", ""),
+            sections,
+            list(state.get("limits", [])),
+            list(state.get("motivations", [])),
+        )
+        quiz = usable_quiz_items(generated.quiz)[: self._settings.max_quiz_items]
+        quiz = number_quiz_items(quiz)
+
+        dropped = len(generated.quiz) - len(quiz)
+        if dropped > 0:
+            logger.info("dropped_malformed_quiz_items", kb_id=state.get("kb_id"), dropped=dropped)
+
+        written = f"WRITING THE GATE QUIZ · {len(quiz)} QUESTIONS"
+        await self._progress.report(written)
+        return {
+            "quiz": [item.model_dump() for item in quiz],
+            "status_lines": list(state.get("status_lines", [])) + [line, written],
+        }
+
+    # ── 8. verify_refs ───────────────────────────────────────────────────────
+
+    async def verify_refs(self, state: IngestState) -> dict[str, Any]:
+        """Assertion B2, run inside the product rather than only in a test. Pure."""
+
+        ids = _section_ids(state)
+        chips = [Chip.model_validate(row) for row in state.get("chips", [])]
+        quiz = [QuizItem.model_validate(row) for row in state.get("quiz", [])]
+
+        unresolved_chips = refs.unresolved_indexes([chip.kb_section for chip in chips], ids)
+        unresolved_quiz = refs.unresolved_indexes([item.source_section for item in quiz], ids)
+
+        if unresolved_chips or unresolved_quiz:
             logger.info(
-                "thin_positions", course_id=state.get("course_id"), positions=len(positions)
+                "unresolved_section_refs",
+                kb_id=state.get("kb_id"),
+                chips=len(unresolved_chips),
+                quiz=len(unresolved_quiz),
+                sections=len(ids),
             )
+        return {"unresolved_chips": unresolved_chips, "unresolved_quiz": unresolved_quiz}
+
+    async def after_verify(self, state: IngestState) -> Literal["repair_refs", "write_pre_roll"]:
+        unresolved = state.get("unresolved_chips") or state.get("unresolved_quiz")
+        if unresolved and state.get("repair_attempts", 0) < self._settings.max_ref_repairs:
+            return "repair_refs"
+        return "write_pre_roll"
+
+    # ── 9. repair_refs ───────────────────────────────────────────────────────
+
+    async def repair_refs(self, state: IngestState) -> dict[str, Any]:
+        """One bounded attempt to find a real section for the items that cite nothing."""
+
+        line = "CHECKING SECTION REFERENCES…"
+        await self._progress.report(line)
+
+        ids = _section_ids(state)
+        chips = [Chip.model_validate(row) for row in state.get("chips", [])]
+        quiz = [QuizItem.model_validate(row) for row in state.get("quiz", [])]
+        broken_chips = list(state.get("unresolved_chips", []))
+        broken_quiz = list(state.get("unresolved_quiz", []))
+
+        # Both lists in one call: they are the same question over the same section ids,
+        # and one round trip is cheaper than two.
+        asked = [chips[index].text for index in broken_chips] + [
+            quiz[index].question for index in broken_quiz
+        ]
+        repaired = await self._model.repair_refs(asked, ids)
+        # Padded rather than indexed defensively at each use: a model that returns a
+        # short list is a model that answered some of them, and the rest stay unresolved.
+        repaired += [""] * (len(asked) - len(repaired))
+
+        for offset, index in enumerate(broken_chips):
+            # `resolve` returns the canonical id, so a model that found the right section
+            # with the wrong casing is written back correctly rather than failing again.
+            if canonical := refs.resolve(repaired[offset], ids):
+                chips[index].kb_section = canonical
+        for offset, index in enumerate(broken_quiz):
+            if canonical := refs.resolve(repaired[len(broken_chips) + offset], ids):
+                quiz[index].source_section = canonical
 
         return {
-            "positions": [position.model_dump() for position in positions],
-            "lessons": [lesson.model_dump() for lesson in lessons],
-            "voice_card": state.get("voice_card") or VoiceCard().model_dump(),
+            "chips": [chip.model_dump() for chip in chips],
+            "quiz": [item.model_dump() for item in quiz],
+            "repair_attempts": state.get("repair_attempts", 0) + 1,
+            "status_lines": list(state.get("status_lines", [])) + [line],
+        }
+
+    # ── 10. write_pre_roll ───────────────────────────────────────────────────
+
+    async def write_pre_roll(self, state: IngestState) -> dict[str, Any]:
+        line = "WRITING THE PRE-ROLL…"
+        await self._progress.report(line)
+
+        # Section titles and summaries rather than bodies: the pre-roll says what is
+        # loaded, and sending fourteen full bodies to write four bullets is an expensive
+        # way to learn nothing extra.
+        pre_roll = await self._model.write_pre_roll(
+            state.get("candidate_name", ""), _section_digest(state, with_body=False)
+        )
+        pre_roll.bullets = pre_roll.bullets[: self._settings.pre_roll_bullets]
+        return {
+            "pre_roll": pre_roll.model_dump(),
+            "status_lines": list(state.get("status_lines", [])) + [line],
+        }
+
+    # ── 11. assemble ─────────────────────────────────────────────────────────
+
+    async def assemble(self, state: IngestState) -> dict[str, Any]:
+        """Final shape: ordinals, canonical references, and the thin-result log. Pure.
+
+        Every reference is rewritten to the exact section id it resolves to, or cleared.
+        Two things fall out of that, and both matter downstream:
+
+        - What is stored is byte-identical to a section id, so Journey 2 can look a
+          citation up with an equality check instead of re-implementing this module's
+          normalisation in a third language.
+        - A reference that still resolves to nothing after a bounded repair is cleared
+          rather than shipped: the review screen renders the card as unsourced, so the
+          candidate sees that this question has nothing behind it instead of a citation
+          that leads nowhere. The chip or question itself survives — deleting it would
+          silently lose something worth asking.
+        """
+
+        ids = _section_ids(state)
+
+        chips = [Chip.model_validate(row) for row in state.get("chips", [])]
+        for chip in chips:
+            chip.kb_section = refs.resolve(chip.kb_section, ids) or ""
+
+        quiz = [QuizItem.model_validate(row) for row in state.get("quiz", [])]
+        for item in quiz:
+            item.source_section = refs.resolve(item.source_section, ids) or ""
+
+        sections = [Section.model_validate(row) for row in state.get("sections", [])]
+        for ordinal, section in enumerate(sections, start=1):
+            section.ord = ordinal
+
+        _log_thin_results(state.get("kb_id", ""), sections, chips, quiz)
+
+        return {
+            "sections": [section.model_dump() for section in sections],
+            "chips": [chip.model_dump() for chip in chips],
+            "quiz": [item.model_dump() for item in quiz],
+            "pre_roll": state.get("pre_roll") or PreRoll().model_dump(),
         }
 
 
@@ -389,11 +468,11 @@ class IngestNodes:
 
 
 def split_corpus(source_text: str, source_files: list[str], max_chars: int) -> list[Segment]:
-    """Recover the individual files from the corpus the web app concatenated.
+    """Recover the individual documents from the corpus the web app concatenated.
 
     joinCorpus in services/web/lib/extract.ts writes "# SOURCE FILE: name" before each
     upload precisely so this is possible. Pasted text arrives without headers and comes
-    back as one segment, which is correct: it is one source.
+    back as one segment, which is correct: it is one document.
     """
 
     segments: list[Segment] = []
@@ -415,47 +494,90 @@ def split_corpus(source_text: str, source_files: list[str], max_chars: int) -> l
 
 
 def _stamp_reading(reading: SegmentReading, source_name: str) -> SegmentReading:
-    """Attribute every candidate to the file it came from.
+    """Attribute every section candidate to the document it came from.
 
     The model is asked for `source_name` but has no reason to get it right, and
-    `resolve_positions` weighs a walkback in a later newsletter against a rule stated in
-    an earlier manuscript. Stamping it here means that provenance is a fact rather than
-    something the model remembered.
+    `write_section` writes each body from the documents its plan named. Stamping it here
+    means provenance is a fact rather than something the model remembered.
     """
 
-    for candidate in reading.candidates:
+    for candidate in reading.section_candidates:
         candidate.source_name = source_name
-        if candidate.source_kind is SourceKind.UNKNOWN:
+        if candidate.source_kind is None or candidate.source_kind.value == "unknown":
             candidate.source_kind = reading.kind
     return reading
 
 
-def dedupe_positions(positions: list[Position]) -> list[Position]:
-    """Collapse positions that are the same claim written twice.
+def dedupe_plans(plans: list[SectionPlan]) -> list[SectionPlan]:
+    """Collapse planned sections that resolve to the same id.
 
-    A cheap backstop for assertion A6, not a replacement for it. Real dedup is semantic
-    — "the price objection isn't about price" restated in a Q&A months later — and that
-    judgement belongs to the resolver, which sees every candidate at once. This only
-    catches the case where the same sentence survived twice, which is exactly what a
-    model does when two sources quote it identically.
+    Two sections sharing an id is not a cosmetic problem: the id is what every chip and
+    quiz item resolves against, so a duplicate turns each of those references into a coin
+    flip between two different bodies. The first one wins, because the planner was told
+    to order sections the way a stranger should read them.
     """
 
     seen: set[str] = set()
-    unique: list[Position] = []
-    for position in positions:
-        key = anchors.normalize_for_match(position.claim)
-        if key in seen:
+    unique: list[SectionPlan] = []
+    for plan in plans:
+        key = refs.normalize_ref(plan.identifier())
+        if not key or key in seen:
             continue
         seen.add(key)
-        unique.append(position)
+        unique.append(plan)
     return unique
 
 
-def material_for(plan: LessonPlan, segments: list[Segment], max_chars: int) -> str:
-    """The source text one lesson is written from.
+def select_default_chips(chips: list[Chip], count: int) -> list[Chip]:
+    """Mark the first `count` chips selected, unless the model already chose.
 
-    Named sources when the plan named any, everything otherwise. Truncated per segment
-    rather than by cutting the tail off the whole string, so a lesson drawing on four
+    The generator is told to put its strongest questions first, so "the first three" is a
+    defensible default rather than an arbitrary one — and it is a default, which the
+    candidate changes on the review screen.
+    """
+
+    if any(chip.selected for chip in chips):
+        return chips
+    for index, chip in enumerate(chips):
+        chip.selected = index < count
+    return chips
+
+
+def usable_quiz_items(items: list[QuizItem]) -> list[QuizItem]:
+    """Drop items the gate could not render or score.
+
+    Exactly four non-empty choices, an answer index that points at one of them, and a
+    question. Anything else is not a weak question — it is a broken screen, and no
+    amount of reviewing on the candidate's part can fix a missing option.
+    """
+
+    usable: list[QuizItem] = []
+    for item in items:
+        if not item.question.strip():
+            continue
+        if len(item.choices) != QUIZ_CHOICE_COUNT:
+            continue
+        if any(not choice.strip() for choice in item.choices):
+            continue
+        if not 0 <= item.correct_index < QUIZ_CHOICE_COUNT:
+            continue
+        usable.append(item)
+    return usable
+
+
+def number_quiz_items(items: list[QuizItem]) -> list[QuizItem]:
+    """Give every item a stable id, so a gate attempt can record what it sampled."""
+
+    for index, item in enumerate(items, start=1):
+        item.id = item.id.strip() or f"q{index:02d}"
+    return items
+
+
+def material_for(plan: SectionPlan, segments: list[Segment], max_chars: int) -> str:
+    """The source text one section is written from.
+
+    Named documents when the plan named any, everything otherwise. Truncated per document
+    rather than by cutting the tail off the whole string, so a section drawing on four
     files still sees the start of all four instead of all of the first and none of the
     last.
     """
@@ -467,6 +589,64 @@ def material_for(plan: LessonPlan, segments: list[Segment], max_chars: int) -> s
     return "\n\n---\n\n".join(
         f"{SOURCE_HEADER}{item.name}\n\n{item.text[:budget]}" for item in chosen
     )
+
+
+def _section_ids(state: IngestState) -> list[str]:
+    return [
+        section_id(row.get("path", ""), row.get("anchor", "")) for row in state.get("sections", [])
+    ]
+
+
+def _section_digest(state: IngestState, *, with_body: bool = True) -> list[dict[str, Any]]:
+    """The sections as the generators see them: id, title, summary, and maybe the body."""
+
+    digest: list[dict[str, Any]] = []
+    for row in state.get("sections", []):
+        entry = {
+            "id": section_id(row.get("path", ""), row.get("anchor", "")),
+            "title": row.get("title", ""),
+            "summary": row.get("summary", ""),
+        }
+        if with_body:
+            entry["body_md"] = row.get("body_md", "")
+        digest.append(entry)
+    return digest
+
+
+def _log_thin_results(
+    kb_id: str, sections: list[Section], chips: list[Chip], quiz: list[QuizItem]
+) -> None:
+    """Warn about a thin run without failing it.
+
+    None of these are errors: POC_UserJourney.md is explicit that a candidate with a
+    sparse corpus still has a knowledge base worth publishing. They are worth logging
+    because they are also what a truncated model response looks like.
+    """
+
+    if len(sections) < 8:
+        logger.warning("thin_knowledge_base", kb_id=kb_id, sections=len(sections))
+    if len(chips) < refs.TARGET_CHIPS:
+        logger.info("thin_chips", kb_id=kb_id, chips=len(chips))
+    if len(quiz) < refs.TARGET_QUIZ_ITEMS:
+        logger.info("thin_quiz", kb_id=kb_id, quiz=len(quiz))
+
+    empty = [
+        category.value
+        for category in QuizCategory
+        if not any(item.category is category for item in quiz)
+    ]
+    if empty:
+        # The gate samples one item per category. An empty category means it cannot, and
+        # the review screen says so — better a warning now than a booking gate that
+        # quietly asks three questions.
+        logger.warning("empty_quiz_categories", kb_id=kb_id, categories=empty)
+
+    lookups = [
+        item.id for item in quiz if refs.looks_ctrl_f_answerable(item.choices, item.correct_index)
+    ]
+    if lookups:
+        # Assertion B8, reported rather than enforced. See app/graph/refs.py.
+        logger.info("ctrl_f_answerable_quiz_items", kb_id=kb_id, items=lookups)
 
 
 def build_ingest_graph(nodes: IngestNodes) -> StateGraph:
@@ -486,29 +666,43 @@ def build_ingest_graph(nodes: IngestNodes) -> StateGraph:
     builder.add_node("sanitize", nodes.sanitize, metadata=WORKFLOW_NODE)
     builder.add_node("segment", nodes.segment, metadata=WORKFLOW_NODE)
     builder.add_node("read_segment", nodes.read_segment, metadata=LLM_NODE)
-    builder.add_node("resolve_positions", nodes.resolve_positions, metadata=LLM_NODE)
-    builder.add_node("verify_quotes", nodes.verify_quotes, metadata=WORKFLOW_NODE)
-    builder.add_node("repair_quotes", nodes.repair_quotes, metadata=LLM_NODE)
-    builder.add_node("plan_lessons", nodes.plan_lessons, metadata=LLM_NODE)
-    builder.add_node("write_lesson", nodes.write_lesson, metadata=LLM_NODE)
-    builder.add_node("read_voice", nodes.read_voice, metadata=LLM_NODE)
+    builder.add_node("plan_sections", nodes.plan_sections, metadata=LLM_NODE)
+    builder.add_node("write_section", nodes.write_section, metadata=LLM_NODE)
+    builder.add_node("generate_chips", nodes.generate_chips, metadata=LLM_NODE)
+    builder.add_node("generate_quiz", nodes.generate_quiz, metadata=LLM_NODE)
+    builder.add_node("verify_refs", nodes.verify_refs, metadata=WORKFLOW_NODE)
+    builder.add_node("repair_refs", nodes.repair_refs, metadata=LLM_NODE)
+    builder.add_node("write_pre_roll", nodes.write_pre_roll, metadata=LLM_NODE)
     builder.add_node("assemble", nodes.assemble, metadata=WORKFLOW_NODE)
 
     builder.add_edge(START, "sanitize")
     builder.add_edge("sanitize", "segment")
-    builder.add_edge("segment", "read_segment")
+    # Every loop is entered through a router that has already checked there is something
+    # to iterate over. The three of them — after_segment, after_plan, after_write — are
+    # the same guard at three depths, and each one is the difference between an empty
+    # input finishing cleanly and an IndexError retried three times under Temporal.
     builder.add_conditional_edges(
-        "read_segment", nodes.after_read, ["read_segment", "resolve_positions"]
+        "segment", nodes.after_segment, ["read_segment", "generate_chips"]
     )
-    builder.add_edge("resolve_positions", "verify_quotes")
     builder.add_conditional_edges(
-        "verify_quotes", nodes.after_verify, ["repair_quotes", "plan_lessons"]
+        "read_segment", nodes.after_read, ["read_segment", "plan_sections"]
+    )
+    builder.add_conditional_edges(
+        "plan_sections", nodes.after_plan, ["write_section", "generate_chips"]
+    )
+    builder.add_conditional_edges(
+        "write_section", nodes.after_write, ["write_section", "generate_chips"]
+    )
+    # Chips and quiz both cite sections, so both are generated before either is checked,
+    # and one verify/repair loop covers them together.
+    builder.add_edge("generate_chips", "generate_quiz")
+    builder.add_edge("generate_quiz", "verify_refs")
+    builder.add_conditional_edges(
+        "verify_refs", nodes.after_verify, ["repair_refs", "write_pre_roll"]
     )
     # Back to the check rather than straight on: a repair that did not find a real
-    # anchor must be seen as still unanchored, not assumed fixed.
-    builder.add_edge("repair_quotes", "verify_quotes")
-    builder.add_conditional_edges("plan_lessons", nodes.after_plan, ["write_lesson", "read_voice"])
-    builder.add_conditional_edges("write_lesson", nodes.after_write, ["write_lesson", "read_voice"])
-    builder.add_edge("read_voice", "assemble")
+    # section must be seen as still unresolved, not assumed fixed.
+    builder.add_edge("repair_refs", "verify_refs")
+    builder.add_edge("write_pre_roll", "assemble")
     builder.add_edge("assemble", END)
     return builder

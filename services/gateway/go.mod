@@ -1,4 +1,4 @@
-module github.com/example/kpi-courses/services/gateway
+module github.com/example/reverse-interview/services/gateway
 
 go 1.26.0
 

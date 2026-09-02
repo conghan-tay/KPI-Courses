@@ -1,11 +1,11 @@
-// Command seed puts the reference course in the studio without running a model.
+// Command seed puts the reference knowledge base in the studio without running a model.
 //
-// It is opt-in: an empty studio is a designed screen ("No courses yet. Make one."), and
-// a demo that starts with somebody else's course already in it is a worse demo. Run it
-// when you want the review screen populated in one second instead of ninety.
+// It is opt-in: an empty studio is a designed screen ("Nothing here yet. Build one."),
+// and a demo that starts with somebody else's knowledge base already in it is a worse
+// demo. Run it when you want the review screen populated in one second instead of ninety.
 //
 //	go run ./cmd/seed            # from services/gateway, with DATABASE_URL set
-//	make seed-course
+//	make seed-kb
 package main
 
 import (
@@ -15,44 +15,63 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/example/kpi-courses/services/gateway/internal/api"
-	"github.com/example/kpi-courses/services/gateway/internal/courses"
-	"github.com/example/kpi-courses/services/gateway/internal/store"
+	"github.com/example/reverse-interview/services/gateway/internal/api"
+	"github.com/example/reverse-interview/services/gateway/internal/kb"
+	"github.com/example/reverse-interview/services/gateway/internal/store"
 )
 
+// The header services/web/lib/extract.ts writes between concatenated uploads. The corpus
+// is rebuilt with it here so [RETRY INGESTION] on a seeded knowledge base runs the same
+// read loop a real upload would, rather than seeing one giant document.
+const sourceHeader = "# SOURCE FILE: "
+
+// fixtureFiles is the reference corpus, in the order the dropzone sends it.
+var fixtureFiles = []string{
+	"resume.md",
+	"agoda-supplier-payouts.md",
+	"agoda-psp-routing.md",
+	"agoda-reconciliation.md",
+	"postgres-notes.md",
+	"nodusart-advisory.md",
+	"career-notes.md",
+}
+
 // fixture is docs/productDocs/fixtures/expected.json: the reference output of one
-// ingestion run, alongside the course metadata source.md's frontmatter carries.
+// ingestion run, alongside the metadata resume.md's frontmatter carries.
 type fixture struct {
-	Course struct {
-		Slug       string `json:"slug"`
-		Title      string `json:"title"`
-		Tagline    string `json:"tagline"`
-		PriceCents int    `json:"price_cents"`
-	} `json:"course"`
-	Lessons   []api.Lesson   `json:"lessons"`
-	Positions []api.Position `json:"positions"`
-	VoiceCard api.VoiceCard  `json:"voice_card"`
+	KnowledgeBase struct {
+		Slug    string `json:"slug"`
+		Title   string `json:"title"`
+		Tagline string `json:"tagline"`
+	} `json:"kb"`
+	Sections []api.Section  `json:"sections"`
+	Chips    []api.Chip     `json:"chips"`
+	Quiz     []api.QuizItem `json:"quiz"`
+	PreRoll  api.PreRoll    `json:"pre_roll"`
 }
 
 func main() {
 	fixtureDir := flag.String(
 		"fixtures", envOr("FIXTURE_DIR", "../../docs/productDocs/fixtures"),
-		"directory holding expected.json and source.md",
+		"directory holding expected.json and the source documents",
 	)
-	specialistID := flag.String("specialist", "user-dana", "seeded specialist to own the course")
+	candidateID := flag.String(
+		"candidate", "user-arun", "seeded candidate to own the knowledge base",
+	)
 	flag.Parse()
 
-	if err := run(*fixtureDir, *specialistID); err != nil {
+	if err := run(*fixtureDir, *candidateID); err != nil {
 		fmt.Fprintln(os.Stderr, "seed failed:", err)
 		os.Exit(1)
 	}
 }
 
-func run(fixtureDir, specialistID string) error {
+func run(fixtureDir, candidateID string) error {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		return fmt.Errorf("DATABASE_URL is required")
@@ -66,11 +85,9 @@ func run(fixtureDir, specialistID string) error {
 	if err := json.Unmarshal(expected, &loaded); err != nil {
 		return fmt.Errorf("parse expected.json: %w", err)
 	}
-	// The real corpus, so the review screen's quote-anchor check has something to check
-	// against and [RETRY INGESTION] on this course would actually work.
-	source, err := os.ReadFile(filepath.Join(fixtureDir, "source.md"))
+	source, err := readCorpus(fixtureDir)
 	if err != nil {
-		return fmt.Errorf("read source.md: %w", err)
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -86,36 +103,50 @@ func run(fixtureDir, specialistID string) error {
 	}
 	repository := store.NewPostgresRepository(pool)
 
-	user, err := repository.User(ctx, specialistID)
+	user, err := repository.User(ctx, candidateID)
 	if err != nil {
-		return fmt.Errorf("resolve %s: %w", specialistID, err)
+		return fmt.Errorf("resolve %s: %w", candidateID, err)
 	}
 
 	now := api.Timestamp(time.Now())
-	draft := courses.NewDraft(courses.NewCourseID(), user, api.IngestRequest{
-		Title:       loaded.Course.Title,
-		Tagline:     loaded.Course.Tagline,
-		PriceCents:  loaded.Course.PriceCents,
-		SourceText:  string(source),
-		SourceFiles: []string{"source.md"},
+	draft := kb.NewDraft(kb.NewKBID(), user, api.IngestRequest{
+		Title:       loaded.KnowledgeBase.Title,
+		Tagline:     loaded.KnowledgeBase.Tagline,
+		SourceText:  source,
+		SourceFiles: fixtureFiles,
 	}, now)
-	// Straight to "ready": this is what an ingestion would have produced, so the course
-	// lands in exactly the state the review screen expects.
-	seeded := courses.ApplyIngestResult(draft, api.IngestResult{
-		Lessons:   loaded.Lessons,
-		Positions: loaded.Positions,
-		VoiceCard: loaded.VoiceCard,
+	// Straight to "ready": this is what an ingestion would have produced, so the
+	// knowledge base lands in exactly the state the review screen expects.
+	seeded := kb.ApplyIngestResult(draft, api.IngestResult{
+		Sections: loaded.Sections,
+		Chips:    loaded.Chips,
+		Quiz:     loaded.Quiz,
+		PreRoll:  loaded.PreRoll,
 	})
 
 	created, err := repository.Create(ctx, seeded)
 	if err != nil {
-		return fmt.Errorf("write course: %w", err)
+		return fmt.Errorf("write knowledge base: %w", err)
 	}
 	fmt.Printf(
-		"seeded %s (%d lessons, %d positions) at /studio/%s\n",
-		created.Slug, len(created.Lessons), len(created.Positions), created.ID,
+		"seeded %s (%d sections, %d chips, %d quiz items) at /studio/%s\n",
+		created.Slug, len(created.Sections), len(created.Chips), len(created.Quiz),
+		created.ID,
 	)
 	return nil
+}
+
+// readCorpus rebuilds what joinCorpus in services/web/lib/extract.ts would have sent.
+func readCorpus(fixtureDir string) (string, error) {
+	parts := make([]string, 0, len(fixtureFiles))
+	for _, name := range fixtureFiles {
+		body, err := os.ReadFile(filepath.Join(fixtureDir, name))
+		if err != nil {
+			return "", fmt.Errorf("read %s: %w", name, err)
+		}
+		parts = append(parts, sourceHeader+name+"\n\n"+string(body))
+	}
+	return strings.Join(parts, "\n\n---\n\n"), nil
 }
 
 func envOr(key, fallback string) string {

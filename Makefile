@@ -1,4 +1,4 @@
-.PHONY: install lint test test-unit test-e2e eval run seed-course ui down \
+.PHONY: install lint test test-unit test-e2e eval run seed-kb ui down \
 	web-install web-dev web-lint web-test web-test-e2e
 
 install:
@@ -23,8 +23,8 @@ test-unit:
 # deterministic and costs nothing.
 #
 # `down -v` first because the Playwright smoke asserts the designed empty state
-# ("No courses yet. Make one."), and it runs before the API suite for the same
-# reason. Both then leave courses behind, which is why the order is fixed.
+# ("Nothing here yet. Build one."), and it runs before the API suite for the same
+# reason. Both then leave knowledge bases behind, which is why the order is fixed.
 test-e2e:
 	docker compose down -v
 	docker compose -f compose.yaml -f compose.e2e.yaml up --build -d --wait
@@ -40,14 +40,14 @@ eval:
 run:
 	docker compose up --build
 
-# The reference course, straight to `ready`, without waiting on a model. Opt-in:
+# The reference knowledge base, straight to `ready`, without waiting on a model. Opt-in:
 # an empty studio is a designed screen.
-seed-course:
-	cd services/gateway && DATABASE_URL=$${DATABASE_URL:-postgres://courses:courses@localhost:5432/courses?sslmode=disable} \
+seed-kb:
+	cd services/gateway && DATABASE_URL=$${DATABASE_URL:-postgres://kb:kb@localhost:5432/kb?sslmode=disable} \
 		go run ./cmd/seed
 
 # Temporal Web UI. Worth opening during an ingestion: one activity per source
-# file and one per lesson, each with its own retries.
+# document and one per section, each with its own retries.
 ui:
 	open http://localhost:8233
 

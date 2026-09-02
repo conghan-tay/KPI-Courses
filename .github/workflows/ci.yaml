@@ -90,7 +90,7 @@ jobs:
       - run: docker compose -f compose.yaml -f compose.e2e.yaml up --build -d --wait
 
       # Journey 1 in a real browser. Runs first: it asserts the designed empty
-      # state, and the API suite below leaves courses behind.
+      # state, and the API suite below leaves knowledge bases behind.
       - run: npm run test:e2e
         working-directory: services/web
 

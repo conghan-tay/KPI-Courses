@@ -19,12 +19,12 @@ export function SectionHead({
   return (
     <div
       className={cn(
-        "mb-7 flex flex-wrap items-baseline gap-4 border-b-[3px] border-ink pb-2.5",
+        "mb-7 flex flex-wrap items-baseline gap-4 border-b border-hairline pb-2.5",
         className
       )}
     >
-      <h2 className="type-display-m">{title}</h2>
-      {note && <span className="type-meta text-ink-muted">{note}</span>}
+      <h2 className="type-headline">{title}</h2>
+      {note && <span className="type-caption text-ink-muted">{note}</span>}
       {actions && <div className="ml-auto flex items-center gap-3">{actions}</div>}
     </div>
   );

@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { RisoPortrait } from "@/components/kb/RisoPortrait";
+import { Portrait } from "@/components/kb/Portrait";
 import { SEEDED_USERS, type User } from "@/lib/seed";
 
 // POC_UserJourney.md §0 — "Sign in as Candidate / Recruiter", two seeded users,
@@ -48,16 +48,16 @@ export function RoleSwitcher({ user }: { user: User }) {
           <DropdownMenuItem
             key={seeded.id}
             onClick={() => startTransition(() => signInAs(seeded.id))}
-            className={seeded.id === user.id ? "bg-pink-wash" : undefined}
+            className={seeded.id === user.id ? "bg-surface-sunk" : undefined}
           >
-            <RisoPortrait
+            <Portrait
               name={seeded.name}
               initials={seeded.initials}
               size="sm"
             />
             <span className="flex flex-col">
               <span>{seeded.name}</span>
-              <span className="type-meta text-ink-muted">{seeded.role}</span>
+              <span className="type-caption text-ink-muted">{seeded.role}</span>
             </span>
           </DropdownMenuItem>
         ))}

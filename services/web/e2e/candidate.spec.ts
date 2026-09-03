@@ -65,7 +65,9 @@ test("a candidate turns documents into a published knowledge base", async ({
   await expect(page.getByText("Your quiz answers never reach a browser")).toBeVisible();
 
   // Edit a question and let the debounce land.
-  const question = page.getByLabel("Question 1", { exact: true });
+  const question = page
+    .getByRole("article", { name: "Question 1" })
+    .getByLabel("What they type");
   await question.fill("what happens when a PSP dies mid-payout?");
   await expect(page.getByText("Saved")).toBeVisible();
 
@@ -95,7 +97,9 @@ test("a candidate turns documents into a published knowledge base", async ({
   // Preview renders the recruiter's landing view.
   await page.getByRole("button", { name: "Preview as a recruiter" }).click();
   await expect(page).toHaveURL(/\/preview$/);
-  await expect(page.getByText("Preview — not live").first()).toBeVisible();
+  await expect(
+    page.getByText("Preview. Nothing here is live yet.")
+  ).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Knowledge base" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start my hour" })).toBeDisabled();
 
@@ -114,9 +118,9 @@ test("a candidate turns documents into a published knowledge base", async ({
   // The edit survived the round trip to Postgres, which the in-page optimistic
   // update would have hidden.
   await page.getByRole("link", { name: /Arun Velasco/ }).first().click();
-  await expect(page.getByLabel("Question 1", { exact: true })).toHaveValue(
-    "what happens when a PSP dies mid-payout?"
-  );
+  await expect(
+    page.getByRole("article", { name: "Question 1" }).getByLabel("What they type")
+  ).toHaveValue("what happens when a PSP dies mid-payout?");
 });
 
 test("the public page never ships the quiz to an unauthenticated reader", async ({

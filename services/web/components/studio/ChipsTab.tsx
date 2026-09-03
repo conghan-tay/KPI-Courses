@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 import { ChipCard } from "@/components/kb/ChipCard";
-import { Notice } from "@/components/riso/Notice";
+import { Notice } from "@/components/chrome/Notice";
 import { ApiRequestError, rephraseChip } from "@/lib/api-client";
 import { countSelected, deleteChip, emptyChip, toggleChip, updateChip } from "@/lib/reducers";
 import { TARGET_CHIPS } from "@/lib/refs";
@@ -59,14 +59,14 @@ export function ChipsTab({
         <Notice label="No questions yet">
           <p>
             We didn&apos;t find enough in your material to guess what a recruiter
-            would ask first. Write three yourself — they&apos;re the first thing
+            would ask first. Write three yourself. They&apos;re the first thing
             anyone sees.
           </p>
         </Notice>
       ) : (
-        <p className="type-body-l measure-read">
+        <p className="type-body measure-read text-ink-muted">
           These are the {chips.length} questions a recruiter would type first.
-          Pick {SELECTED_CHIP_COUNT} for your front page — the rest stay yours.
+          Pick {SELECTED_CHIP_COUNT} for your front page. The rest stay yours.
         </p>
       )}
 
@@ -74,20 +74,22 @@ export function ChipsTab({
           so it says where you stand rather than waiting to refuse at the end. */}
       {chips.length > 0 && (
         <div
-          className={`type-label flex items-center gap-3 border-2 border-ink px-4 py-3 ${
-            selected === SELECTED_CHIP_COUNT ? "bg-pink" : "bg-paper"
+          className={`type-label flex items-center gap-3 rounded-lg border px-4 py-3 ${
+            selected === SELECTED_CHIP_COUNT
+              ? "border-live-hairline bg-live-wash text-ink"
+              : "border-hairline bg-surface-sunk text-ink"
           }`}
           aria-live="polite"
         >
-          <span className="font-mono">
+          <span className="type-mono">
             {selected} / {SELECTED_CHIP_COUNT}
           </span>
           <span>
             {selected === SELECTED_CHIP_COUNT
-              ? "chosen — that's your front page"
+              ? "chosen. That's your front page."
               : selected < SELECTED_CHIP_COUNT
-                ? `chosen — pick ${SELECTED_CHIP_COUNT - selected} more to publish`
-                : "chosen — drop one to publish"}
+                ? `chosen. Pick ${SELECTED_CHIP_COUNT - selected} more to publish.`
+                : "chosen. Drop one to publish."}
           </span>
         </div>
       )}
@@ -95,14 +97,14 @@ export function ChipsTab({
       {thin && chips.length > 0 && (
         <Notice label={`Only ${chips.length} questions`}>
           We aim for {TARGET_CHIPS} so there is something to choose between. You
-          can still publish — three is all the front page shows — but a thin set
+          can still publish, since three is all the front page shows, but a thin set
           means the pipeline found less in your material than it wanted to.
         </Notice>
       )}
 
       {note && <Notice label="Rewrite">{note}</Notice>}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 min-[1700px]:grid-cols-2">
         {chips.map((chip, index) => (
           <ChipCard
             key={index}
@@ -121,7 +123,7 @@ export function ChipsTab({
         <button
           type="button"
           onClick={() => onChange([...chips, emptyChip()])}
-          className="type-label flex min-h-40 items-center justify-center gap-2 border-[3px] border-dashed border-ink bg-paper p-6 text-ink hover:bg-pink"
+          className="type-label flex min-h-24 items-center justify-center gap-2 rounded-lg border border-dashed border-hairline bg-surface p-6 text-ink-muted transition-colors duration-120 ease-out hover:border-ink-subtle hover:text-ink"
         >
           <Plus className="size-4" aria-hidden />
           Add a question

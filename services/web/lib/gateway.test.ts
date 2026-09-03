@@ -82,9 +82,9 @@ describe("proxyJson", () => {
       jsonResponse(409, {
         error: {
           code: "not_publishable",
-          message: "Pick exactly 3 opening questions for your front page — 2 selected.",
+          message: "Pick exactly 3 opening questions for your front page. 2 selected.",
           blockers: [
-            "Pick exactly 3 opening questions for your front page — 2 selected.",
+            "Pick exactly 3 opening questions for your front page. 2 selected.",
             "A knowledge base with no sections has nothing to answer from.",
           ],
         },

@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Notice } from "@/components/riso/Notice";
+import { Notice } from "@/components/chrome/Notice";
 import { Textarea } from "@/components/ui/textarea";
 import {
   deleteSection,
@@ -60,7 +60,7 @@ export function SectionsTab({
   return (
     <div className="flex flex-col gap-6">
       <p className="type-body-l measure-read">
-        {sections.length} sections. This is what the agent answers from — depth
+        {sections.length} sections. This is what the agent answers from, and depth
         is the point, because the alternative is a CV bullet.
       </p>
 
@@ -68,7 +68,7 @@ export function SectionsTab({
         <Notice label="Questions pointing at nothing">
           <p>
             {orphaned.length} question{orphaned.length === 1 ? "" : "s"} cite a
-            section id that no longer exists. Check the Questions and Quiz tabs —
+            section id that no longer exists. Check the Questions and Quiz tabs:
             the agent will have nothing to answer them from.
           </p>
         </Notice>
@@ -79,9 +79,9 @@ export function SectionsTab({
           const isOpen = open === index;
           const id = sectionId(section.path, section.anchor);
           return (
-            <li key={index} className="border-2 border-ink bg-paper">
+            <li key={index} className="border border-hairline bg-surface">
               <div className="flex items-start gap-4 p-4">
-                <span className="type-meta mt-2 grid size-7 shrink-0 place-items-center rounded-full border-2 border-ink font-mono text-[10px]">
+                <span className="type-caption mt-2 grid size-7 shrink-0 place-items-center rounded-full border border-hairline font-mono text-[10px]">
                   {toRoman(section.ord)}
                 </span>
 
@@ -108,11 +108,11 @@ export function SectionsTab({
                     }
                     rows={2}
                     placeholder="One or two sentences that stand alone."
-                    className="type-body-s"
+                    className="type-body-sm"
                   />
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="type-meta text-ink-muted">Id</span>
+                    <span className="type-caption text-ink-muted">Id</span>
                     <Input
                       aria-label={`Path of section ${section.ord}`}
                       value={section.path}
@@ -141,7 +141,7 @@ export function SectionsTab({
                       className="w-44 font-mono text-[13px]"
                     />
                     {citedIds.has(id) && (
-                      <span className="type-meta border-2 border-ink bg-ink px-2 py-0.5 text-paper">
+                      <span className="type-caption border border-hairline bg-ink px-2 py-0.5 text-on-ink">
                         Cited
                       </span>
                     )}
@@ -154,7 +154,7 @@ export function SectionsTab({
                     aria-label={`Move section ${section.ord} up`}
                     disabled={index === 0}
                     onClick={() => onChange(moveSection(sections, index, index - 1))}
-                    className="grid size-8 place-items-center border-2 border-ink hover:bg-pink disabled:border-ink-faint disabled:text-ink-faint"
+                    className="grid size-8 place-items-center rounded-md border border-hairline text-ink-muted transition-colors duration-120 ease-out hover:bg-surface-sunk hover:text-ink disabled:border-hairline-soft disabled:text-ink-faint"
                   >
                     <ChevronUp className="size-4" aria-hidden />
                   </button>
@@ -163,14 +163,14 @@ export function SectionsTab({
                     aria-label={`Move section ${section.ord} down`}
                     disabled={index === sections.length - 1}
                     onClick={() => onChange(moveSection(sections, index, index + 1))}
-                    className="grid size-8 place-items-center border-2 border-ink hover:bg-pink disabled:border-ink-faint disabled:text-ink-faint"
+                    className="grid size-8 place-items-center rounded-md border border-hairline text-ink-muted transition-colors duration-120 ease-out hover:bg-surface-sunk hover:text-ink disabled:border-hairline-soft disabled:text-ink-faint"
                   >
                     <ChevronDown className="size-4" aria-hidden />
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 border-t-2 border-ink p-3">
+              <div className="flex flex-wrap gap-2 border-t border-hairline-soft p-3">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -197,7 +197,7 @@ export function SectionsTab({
                   Split
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="danger"
                   size="sm"
                   onClick={() => onChange(deleteSection(sections, index))}
                 >
@@ -229,7 +229,7 @@ export function SectionsTab({
       <button
         type="button"
         onClick={() => onChange([...sections, emptySection(sections.length + 1)])}
-        className="type-label flex items-center justify-center gap-2 border-[3px] border-dashed border-ink bg-paper p-6 text-ink hover:bg-pink"
+        className="type-label flex items-center justify-center gap-2 rounded-lg border border-dashed border-hairline bg-surface p-5 text-ink-muted transition-colors duration-120 ease-out hover:border-ink-subtle hover:text-ink"
       >
         <Plus className="size-4" aria-hidden />
         Add a section
@@ -248,13 +248,13 @@ export function SectionsTab({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex max-h-[50vh] flex-col overflow-y-auto border-2 border-ink">
+          <div className="flex max-h-[50vh] flex-col overflow-y-auto border border-hairline">
             {paragraphs.map((paragraph, index) => (
               <div key={index}>
                 {index > 0 && (
                   <button
                     type="button"
-                    className="type-label w-full border-y-2 border-dashed border-ink bg-paper py-2 text-ink hover:bg-pink"
+                    className="type-label w-full border-y border-dashed border-hairline bg-surface-sunk py-2 text-ink-muted transition-colors duration-120 ease-out hover:text-ink"
                     onClick={() => {
                       if (splitting !== null) {
                         onChange(splitSection(sections, splitting, index));

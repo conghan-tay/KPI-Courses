@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 
 import { PublicChip } from "@/components/kb/ChipCard";
-import { RisoPortrait } from "@/components/kb/RisoPortrait";
+import { Portrait } from "@/components/kb/Portrait";
 import { getPublicKB } from "@/lib/api-client";
 import type { PublicKB } from "@/lib/types";
 
 /**
- * DESIGN.md §5.3 gives /studio/:id an 8/4 editor / live-preview split. This is
- * the 4: what a stranger sees.
+ * NEW_DESIGN.md §5 gives /studio/:id an editor column plus a fixed 320px rail.
+ * This is the rail: what a stranger sees.
  *
  * It deliberately re-fetches through `?audience=public` rather than rendering
  * the knowledge base already in memory. The panel therefore *proves* the
@@ -42,40 +42,40 @@ export function PublicPreviewPanel({
 
   return (
     <aside className="flex flex-col gap-4">
-      <div className="border-b-[3px] border-ink pb-2">
+      <div className="border-b border-hairline pb-2">
         <p className="type-label">What a stranger sees</p>
-        <p className="type-body-s mt-1 text-ink-muted">
+        <p className="type-body-sm mt-1 text-ink-muted">
           Your quiz answers never reach a browser.
         </p>
       </div>
 
       {knowledgeBase === null ? (
         <div
-          className="pat-halftone h-64 border-2 border-ink"
+          className="skeleton-block h-64"
           aria-label="Loading preview"
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-3 border-2 border-ink p-4">
-            <RisoPortrait
+          <div className="flex items-start gap-3 border border-hairline p-4">
+            <Portrait
               name={knowledgeBase.candidate_name}
               initials={initialsOf(knowledgeBase.candidate_name)}
               size="sm"
             />
             <div className="min-w-0 flex-1">
               <p className="type-title">{knowledgeBase.title}</p>
-              <p className="type-body-s mt-1 text-ink-muted">
+              <p className="type-body-sm mt-1 text-ink-muted">
                 {knowledgeBase.tagline}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 border-2 border-ink p-4">
-            <p className="type-meta text-ink-muted">Pre-roll</p>
+          <div className="flex flex-col gap-2 border border-hairline p-4">
+            <p className="type-caption text-ink-muted">Pre-roll</p>
             <p className="type-title">{knowledgeBase.pre_roll.headline}</p>
             <ul className="flex flex-col gap-1">
               {knowledgeBase.pre_roll.bullets.map((bullet, index) => (
-                <li key={index} className="type-body-s flex gap-2">
+                <li key={index} className="type-body-sm flex gap-2">
                   <span aria-hidden>▸</span>
                   <span>{bullet}</span>
                 </li>
@@ -90,12 +90,12 @@ export function PublicPreviewPanel({
           </div>
 
           {knowledgeBase.chips.length === 0 && (
-            <p className="type-body-s text-ink-muted">
+            <p className="type-body-sm text-ink-muted">
               No questions chosen, so the page opens with nothing to tap.
             </p>
           )}
 
-          <p className="type-meta text-ink-muted">
+          <p className="type-caption text-ink-muted">
             {knowledgeBase.sections.length} sections listed by title. Bodies stay
             behind the hour.
           </p>

@@ -4,7 +4,7 @@ import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 
 import { cn } from "@/lib/utils";
 
-// DESIGN.md §6, plane 2 — paper, 2px border, --lift. Trimmed to the parts this
+// NEW_DESIGN.md §4, plane 3 — an overlay, so it earns the one shadow. Trimmed to the parts this
 // product uses (the dev role switcher); submenus, checkboxes and radio items
 // were removed rather than left unstyled.
 
@@ -35,7 +35,7 @@ function DropdownMenuContent({
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
-            "min-w-56 border-2 border-ink bg-paper p-1 shadow-lift outline-none",
+            "overlay-panel min-w-56 p-1.5 outline-none",
             className
           )}
           {...props}
@@ -52,7 +52,7 @@ function DropdownMenuLabel({
   return (
     <MenuPrimitive.GroupLabel
       data-slot="dropdown-menu-label"
-      className={cn("type-meta px-3 py-2 text-ink-muted", className)}
+      className={cn("type-caption px-3 py-2 text-ink-muted", className)}
       {...props}
     />
   );
@@ -64,7 +64,7 @@ function DropdownMenuItem({ className, ...props }: MenuPrimitive.Item.Props) {
       data-slot="dropdown-menu-item"
       className={cn(
         "type-body flex cursor-pointer items-center gap-3 px-3 py-2.5 text-ink outline-none select-none",
-        "data-highlighted:bg-pink",
+        "data-highlighted:bg-surface-sunk",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}

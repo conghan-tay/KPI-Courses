@@ -47,13 +47,13 @@ export function Dropzone({
           onAdd(Array.from(event.dataTransfer.files));
         }}
         className={cn(
-          "pat-halftone grid min-h-60 place-items-center border-[3px] border-dashed border-ink p-6",
-          dragging && "bg-pink-wash"
+          "grid min-h-50 place-items-center rounded-xl border-2 border-dashed border-hairline bg-surface p-6 transition-colors duration-120 ease-out",
+          dragging && "bg-live-wash"
         )}
       >
-        <div className="flex flex-col items-center gap-2.5 border-2 border-ink bg-paper px-6 py-5 text-center">
+        <div className="flex flex-col items-center gap-2.5 border border-hairline bg-surface px-6 py-5 text-center">
           <p className="type-title">Drop your material here.</p>
-          <p className="type-body-s text-ink-muted">
+          <p className="type-body-sm text-ink-muted">
             Markdown, plain text, or a PDF with a real text layer.
           </p>
           <Button
@@ -80,14 +80,14 @@ export function Dropzone({
       </div>
 
       {files.length > 0 && (
-        <ul className="flex flex-col border-2 border-ink">
+        <ul className="flex flex-col border border-hairline">
           {files.map((file, index) => (
             <li
               key={`${file.name}-${index}`}
-              className="flex items-center gap-4 border-b-2 border-ink px-4 py-3 last:border-b-0"
+              className="flex items-center gap-4 border-b border-hairline px-4 py-3 last:border-b-0"
             >
               <span className="type-body flex-1 truncate">{file.name}</span>
-              <span className="type-meta text-ink-muted">
+              <span className="type-caption text-ink-muted">
                 {sizeLabel(file.size)}
               </span>
               <Button

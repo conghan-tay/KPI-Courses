@@ -84,7 +84,7 @@ describe("sections", () => {
     const merged = mergeSectionUp(sections(3), 1);
 
     expect(merged).toHaveLength(2);
-    expect(merged[0].title).toBe("Section 1 — Section 2");
+    expect(merged[0].title).toBe("Section 1 + Section 2");
     expect(merged[0].body_md).toBe("Body 1\n\nBody 2");
     expect(merged[0].summary).toBe("Summary 1 Summary 2");
     expect(merged[0].source_names).toEqual(["file-1.md", "file-2.md"]);

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { ChipsTab } from "@/components/studio/ChipsTab";
 import { IngestPanel } from "@/components/studio/IngestPanel";
-import { Notice } from "@/components/riso/Notice";
+import { Notice } from "@/components/chrome/Notice";
 import { PreRollTab } from "@/components/studio/PreRollTab";
 import { PublicPreviewPanel } from "@/components/studio/PublicPreviewPanel";
 import { PublishDialog } from "@/components/studio/PublishDialog";
@@ -34,7 +34,7 @@ const SAVE_LABEL = {
   idle: "",
   saving: "Saving…",
   saved: "Saved",
-  error: "Not saved — check your connection",
+  error: "Not saved. Check your connection.",
 } as const;
 
 export function ReviewScreen({ initial }: { initial: KnowledgeBase }) {
@@ -113,17 +113,17 @@ export function ReviewScreen({ initial }: { initial: KnowledgeBase }) {
       <div className="flex flex-col gap-6">
         <Header knowledgeBase={knowledgeBase} saveLabel="" />
         <Notice
-          tone="alert"
+          tone="danger"
           label="Ingestion failed"
           actions={
-            <Button variant="accent" onClick={() => void retryIngestion()}>
+            <Button variant="primary" onClick={() => void retryIngestion()}>
               Retry
             </Button>
           }
         >
           <p>{knowledgeBase.ingest_error ?? "The pipeline didn't finish."}</p>
           <p className="mt-2 text-ink-muted">
-            Your documents are saved —{" "}
+            Your documents are saved:{" "}
             {knowledgeBase.source_files.join(", ") || "pasted text"}. Nothing
             needs re-uploading.
           </p>
@@ -166,7 +166,7 @@ export function ReviewScreen({ initial }: { initial: KnowledgeBase }) {
             >
               Preview as a recruiter
             </Button>
-            <Button variant="accent" onClick={() => void publish()}>
+            <Button variant="live" onClick={() => void publish()}>
               {knowledgeBase.status === "published" ? "Republish" : "Publish"}
             </Button>
           </>
@@ -174,7 +174,7 @@ export function ReviewScreen({ initial }: { initial: KnowledgeBase }) {
       />
 
       {publishError && (
-        <Notice tone="alert" label="Can't publish yet">
+        <Notice tone="danger" label="Can't publish yet">
           <ul className="flex list-disc flex-col gap-1 pl-5">
             {publishError.map((blocker) => (
               <li key={blocker}>{blocker}</li>
@@ -183,13 +183,16 @@ export function ReviewScreen({ initial }: { initial: KnowledgeBase }) {
         </Notice>
       )}
 
-      <p className="type-body-l measure-read">
+      <p className="type-body-lg measure-read text-ink-muted">
         Eight questions a recruiter would type first. Pick the {SELECTED_CHIP_COUNT}{" "}
-        that go on your front page — the rest of this is what answers them.
+        that go on your front page. The rest of this is what answers them.
       </p>
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-        <div className="xl:col-span-2">
+      {/* NEW_DESIGN.md §5 — the editor takes the width; the preview is a fixed
+          320px reference beside it, not a third of the grid. Below `xl` it is
+          hidden outright rather than squeezing the thing being edited. */}
+      <div className="flex items-start gap-8 max-xl:block">
+        <div className="min-w-0 flex-1">
           <Tabs
             value={tab}
             onValueChange={(next) => {
@@ -211,7 +214,7 @@ export function ReviewScreen({ initial }: { initial: KnowledgeBase }) {
               <TabsTrigger value="pre-roll">Pre-roll</TabsTrigger>
             </TabsList>
 
-            <div className="border-2 border-t-0 border-ink p-6">
+            <div className="mt-6 rounded-xl border border-hairline bg-surface p-6 max-md:p-4">
               <TabsContent value="chips">
                 <ChipsTab
                   knowledgeBase={knowledgeBase}
@@ -249,10 +252,12 @@ export function ReviewScreen({ initial }: { initial: KnowledgeBase }) {
 
         {/* `updated_at` changes exactly when a save lands, so the preview
             follows the edits without a counter to keep in sync. */}
-        <PublicPreviewPanel
-          kbId={knowledgeBase.id}
-          refreshKey={knowledgeBase.updated_at}
-        />
+        <aside className="w-80 shrink-0 max-xl:hidden">
+          <PublicPreviewPanel
+            kbId={knowledgeBase.id}
+            refreshKey={knowledgeBase.updated_at}
+          />
+        </aside>
       </div>
 
       <PublishDialog
@@ -274,23 +279,23 @@ function Header({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4 border-b-[3px] border-ink pb-4">
-      <div>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="type-meta border-2 border-ink px-2 py-0.5">
+    <div className="flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-5">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="type-caption rounded-xs bg-surface-sunk px-2 py-1 text-ink-muted">
             {knowledgeBase.status === "published" ? "Published" : "Draft"}
           </span>
-          <span className="type-meta border-2 border-ink bg-pink px-2 py-0.5 font-mono">
+          <span className="type-mono rounded-xs bg-surface-sunk px-2 py-0.5 text-ink-muted">
             /k/{knowledgeBase.slug}
           </span>
           {saveLabel && (
-            <span className="type-meta text-ink-muted" aria-live="polite">
+            <span className="type-caption text-ink-subtle" aria-live="polite">
               {saveLabel}
             </span>
           )}
         </div>
-        <h1 className="type-display-l mt-3">{knowledgeBase.title}</h1>
-        <p className="type-body-s mt-2 text-ink-muted">{knowledgeBase.tagline}</p>
+        <h1 className="type-display mt-3">{knowledgeBase.title}</h1>
+        <p className="type-body mt-1.5 text-ink-muted">{knowledgeBase.tagline}</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <ButtonLink variant="ghost" href="/studio">

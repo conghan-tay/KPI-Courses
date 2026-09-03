@@ -2,12 +2,12 @@
 
 The candidate's path from a folder of documents to a published knowledge base, from
 [`docs/productDocs/POC_UserJourney.md`](../../docs/productDocs/POC_UserJourney.md),
-built in the RISO POSTER language defined by
-[`DESIGN.md`](../../docs/productDocs/DESIGN.md).
+built in the WARM DOCUMENT language defined by
+[`NEW_DESIGN.md`](../../docs/productDocs/NEW_DESIGN.md).
 
 Journeys 2 (approved, paying, one hour) and 3 (the gate, then a booking) are **not** in
 this app. The components they share with Journey 1 — the pre-roll card, the public chip,
-the section index, the duotoned portrait — are built and in use here.
+the section index, the portrait — are built and in use here.
 
 ```
 /                     → redirects to /studio (/k/:slug is Journey 2)
@@ -84,9 +84,9 @@ docker compose stop worker      # then ingest, then start it again and retry
 # The API is down → "The knowledge-base service isn't responding."
 docker compose stop gateway
 
-# A question pointing at a section that isn't there → a hatch-gutter warning on
-# the card. Delete a section on the Knowledge base tab and watch three
-# questions flag themselves.
+# A question pointing at a section that isn't there → the source field turns
+# danger with a message under it. Delete a section on the Knowledge base tab
+# and watch three questions flag themselves.
 
 # A quiz category with nothing in it → the Quiz tab says the gate can't run,
 # and publish refuses. Delete every `limits` question to see it.

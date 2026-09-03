@@ -165,7 +165,7 @@ func PublishBlockers(knowledgeBase api.KnowledgeBase) []string {
 	}
 	if selected := len(knowledgeBase.SelectedChips()); selected != api.SelectedChipCount {
 		blockers = append(blockers, fmt.Sprintf(
-			"Pick exactly %d opening questions for your front page — %d selected.",
+			"Pick exactly %d opening questions for your front page. %d selected.",
 			api.SelectedChipCount, selected,
 		))
 	}

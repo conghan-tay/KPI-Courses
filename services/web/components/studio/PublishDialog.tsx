@@ -42,18 +42,18 @@ export function PublishDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <p className="type-meta border-2 border-ink bg-paper-tint px-4 py-3 break-all">
+        <p className="type-caption border border-hairline bg-surface-sunk px-4 py-3 break-all">
           {absolute}
         </p>
 
-        <p className="type-body-s text-ink-muted">
-          That page itself ships with Journey 2 — this link will resolve
+        <p className="type-body-sm text-ink-muted">
+          That page itself ships with Journey 2, so this link will resolve
           once that lands.
         </p>
 
         <DialogFooter>
           <Button
-            variant="accent"
+            variant="live"
             onClick={async () => {
               if (!absolute) return;
               await navigator.clipboard.writeText(absolute);

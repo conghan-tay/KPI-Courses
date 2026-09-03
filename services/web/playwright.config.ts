@@ -1,8 +1,17 @@
-import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 3100;
-
+/**
+ * Journey 1 in a real browser, against the real stack.
+ *
+ * There is no `webServer` block any more, and that is the honest consequence of
+ * the API moving to Go: this app can no longer serve `/api/courses/*` on its
+ * own, so booting Next alone would exercise a proxy pointing at nothing. The
+ * spec runs against the compose stack — web, gateway, postgres, temporal and a
+ * worker on MODEL_PROVIDER=fake, which replays the fixture and needs no API key.
+ *
+ *   make test-e2e                                   # brings the stack up first
+ *   E2E_BASE_URL=http://localhost:3000 npm run test:e2e
+ */
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -10,23 +19,14 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: process.env.CI ? "github" : "list",
+  // Ingestion is a durable workflow across a dozen activities. Even replaying
+  // the fixture that is slower than a function call, and the default five-second
+  // expect timeout would make this flaky for no reason.
+  timeout: 180_000,
+  expect: { timeout: 60_000 },
   use: {
-    baseURL: `http://127.0.0.1:${PORT}`,
+    baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: `npm run build && npm run start -- --port ${PORT}`,
-    url: `http://127.0.0.1:${PORT}/studio`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-    env: {
-      // Deterministic and key-free: the fixture is replayed, with the staged
-      // status delays turned off so the run is fast.
-      INGEST_MODE: "mock",
-      INGEST_MOCK_DELAY_MS: "0",
-      // A scratch store, so a test run never touches the dev data.
-      DATA_DIR: path.resolve(process.cwd(), ".data-e2e"),
-    },
-  },
 });

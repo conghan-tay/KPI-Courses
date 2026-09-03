@@ -2,28 +2,23 @@ import { notFound } from "next/navigation";
 
 import { AppFrame } from "@/components/frame/AppFrame";
 import { ReviewScreen } from "@/components/studio/ReviewScreen";
-import { auditAnchors } from "@/lib/quotes";
-import { getMyCourse } from "@/lib/queries";
+import { getMyKnowledgeBase } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReviewPage(props: PageProps<"/studio/[id]">) {
   const { id } = await props.params;
-  const course = await getMyCourse(id);
-  if (!course) notFound();
+  const knowledgeBase = await getMyKnowledgeBase(id);
+  if (!knowledgeBase) notFound();
 
-  // The quote-anchor audit runs on the server: `source_text` can be hundreds of
-  // kilobytes and the browser has no reason to hold it. Claims rather than
-  // indexes, so the warnings survive a reorder — and disappear the moment the
-  // Specialist rewrites the claim and takes ownership of it.
-  const audit = auditAnchors(course.positions, course.source_text);
-  const unanchoredClaims = audit.unanchored.map(
-    (index) => course.positions[index].claim
-  );
-
+  // The reference audit runs on the client rather than here, unlike the quote
+  // audit it replaces. Section ids are short, the whole check is a set lookup,
+  // and — the deciding reason — deleting a section is how a candidate orphans
+  // three questions, so the warning has to appear as they do it rather than on
+  // the next page load.
   return (
     <AppFrame variant="fixed">
-      <ReviewScreen initialCourse={course} unanchoredClaims={unanchoredClaims} />
+      <ReviewScreen initial={knowledgeBase} />
     </AppFrame>
   );
 }

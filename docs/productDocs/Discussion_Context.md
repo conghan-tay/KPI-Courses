@@ -1,3 +1,19 @@
+# Design discussion — the chat-native tutoring product **(superseded)**
+
+> **This is an archive, not a spec.** It records the conversation that produced the
+> original product: a Specialist publishing a course, a Seeker buying it, and learning
+> through chat. That product was replaced by the reverse interview — see
+> [`POC_UserJourney.md`](POC_UserJourney.md) and
+> [`TheReverseInterview/originalIdea.txt`](TheReverseInterview/originalIdea.txt).
+>
+> It is kept because several decisions carried over intact and the reasoning is here
+> rather than in the new doc: why the review screen defaults to the *opinionated* tab
+> rather than the structural one, why there are no star ratings, why a thin extraction
+> gets a reframe instead of an apology, and why the demo fixture is a fictional person.
+> Everything about courses, lessons, positions and voice cards below is dead.
+
+---
+
 # Claude UJ chat
  
 > 

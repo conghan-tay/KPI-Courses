@@ -1,60 +1,76 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: support-agent
+  name: reverse-interview
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: support-agent-config
-  namespace: support-agent
+  name: reverse-interview-config
+  namespace: reverse-interview
 data:
   ENVIRONMENT: production
-  MODEL_PROVIDER: openai
-  MODEL_NAME: gpt-5-mini
+  # POC_UserJourney.md §0: one model for ingestion, and bigger/slower is fine.
+  # `fake` is rejected at boot when ENVIRONMENT=production.
+  MODEL_PROVIDER: anthropic
+  MODEL_NAME: claude-opus-5
   # A Temporal cluster or Temporal Cloud namespace is a prerequisite; it is not
   # deployed by this manifest. See docs/deployment.md.
   TEMPORAL_ADDRESS: replace-with-temporal-host:7233
   TEMPORAL_NAMESPACE: replace-with-namespace
-  TEMPORAL_TASK_QUEUE: support-agent
+  TEMPORAL_TASK_QUEUE: kb-ingest
   TEMPORAL_TLS: "true"
-  APPROVAL_TIMEOUT_HOURS: "72"
-  # Ingestion (gateway) and retrieval (worker) address the same collection with the
-  # same embedding model. A mismatch silently destroys retrieval quality.
+  # Bounds a whole ingestion run. Owned by the gateway because workflow code
+  # cannot read the environment. Size it from a measured p99, not this default:
+  # a run that trips it becomes a draft somebody has to retry.
+  INGEST_TIMEOUT_MINUTES: "20"
+  MAX_SECTIONS: "16"
+  MAX_CHIPS: "8"
+  MAX_QUIZ_ITEMS: "12"
+  # The web app reaches the gateway over the cluster network. Deliberately not a
+  # NEXT_PUBLIC_ variable: the gateway has no public ingress, and the header the
+  # web app uses to say who is signed in is trusted.
+  API_BASE_URL: http://gateway:8080
+  REDIS_URL: redis://replace-with-managed-redis:6379/0
+  # Parked for Journey 3's tutor. Nothing reads these vectors back yet.
   CHROMA_URL: https://replace-with-managed-chroma-host
   CHROMA_HOST: replace-with-managed-chroma-host
   CHROMA_PORT: "443"
   CHROMA_SSL: "true"
-  CHROMA_COLLECTION: support_knowledge
+  CHROMA_COLLECTION: kb_sections_vectors
   EMBEDDING_MODEL: text-embedding-3-small
-  MCP_SERVER_URL: http://mcp-tools:8001/mcp
-  REDIS_URL: redis://replace-with-managed-redis:6379/0
   LANGSMITH_TRACING: "true"
-  LANGSMITH_PROJECT: support-agent-production
+  LANGSMITH_PROJECT: reverse-interview-production
 ---
 # Replace this example with External Secrets, AWS Secrets Manager, or GCP Secret Manager.
 apiVersion: v1
 kind: Secret
 metadata:
-  name: support-agent-secrets
-  namespace: support-agent
+  name: reverse-interview-secrets
+  namespace: reverse-interview
 type: Opaque
 stringData:
+  # Shared by the gateway (as API_KEY) and the web app (as GATEWAY_API_KEY).
   API_KEY: replace-me
-  # Required by the gateway to embed knowledge, regardless of the chat provider.
+  GATEWAY_API_KEY: replace-me
+  # Managed Postgres. The gateway applies its migrations at boot under an advisory
+  # lock, so several replicas rolling at once is safe and no migration Job is needed.
+  DATABASE_URL: postgres://user:password@replace-with-managed-postgres:5432/kb?sslmode=require
+  ANTHROPIC_API_KEY: replace-me
   OPENAI_API_KEY: replace-me
   LANGSMITH_API_KEY: replace-me
   TEMPORAL_API_KEY: replace-me
 ---
 # The worker exposes no port and needs no Service: it polls a Temporal task queue.
-# Scale it on task-queue backlog, not on HTTP concurrency.
+# Scale it on task-queue backlog, not on HTTP concurrency. It is safe to scale
+# horizontally — the pipeline holds no cross-activity state.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: worker
-  namespace: support-agent
+  namespace: reverse-interview
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels: {app: worker}
   template:
@@ -63,10 +79,12 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ghcr.io/your-org/support-agent:latest
+          image: ghcr.io/your-org/reverse-interview-worker:latest
           envFrom:
-            - configMapRef: {name: support-agent-config}
-            - secretRef: {name: support-agent-secrets}
+            - configMapRef: {name: reverse-interview-config}
+            - secretRef: {name: reverse-interview-secrets}
+          # A port check would prove nothing for a process that serves no HTTP.
+          # This asserts the task queue actually has a live poller.
           readinessProbe:
             exec: {command: [python, -m, app.healthcheck]}
             initialDelaySeconds: 10
@@ -89,7 +107,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gateway
-  namespace: support-agent
+  namespace: reverse-interview
 spec:
   replicas: 2
   selector:
@@ -98,56 +116,27 @@ spec:
     metadata:
       labels: {app: gateway}
     spec:
+      # An ingestion holds an SSE connection open for the length of the run, and a
+      # gateway that goes away mid-stream leaves the browser without status lines.
+      # The run itself is safe either way: the replacement pod re-attaches a
+      # completion watcher to every in-flight run at boot.
+      terminationGracePeriodSeconds: 60
       containers:
         - name: gateway
-          image: ghcr.io/your-org/support-gateway:latest
+          image: ghcr.io/your-org/reverse-interview-gateway:latest
           ports:
             - containerPort: 8080
           envFrom:
-            - configMapRef: {name: support-agent-config}
-            - secretRef: {name: support-agent-secrets}
+            - configMapRef: {name: reverse-interview-config}
+            - secretRef: {name: reverse-interview-secrets}
+          # Readiness checks Temporal; liveness deliberately does not, so a
+          # Temporal blip cannot cause a restart loop.
           readinessProbe:
             httpGet: {path: /readyz, port: 8080}
           livenessProbe:
             httpGet: {path: /healthz, port: 8080}
-          resources:
-            requests: {cpu: 100m, memory: 64Mi}
-            limits: {cpu: 500m, memory: 256Mi}
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: gateway
-  namespace: support-agent
-spec:
-  type: LoadBalancer
-  selector: {app: gateway}
-  ports:
-    - port: 80
-      targetPort: 8080
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mcp-tools
-  namespace: support-agent
-spec:
-  replicas: 2
-  selector:
-    matchLabels: {app: mcp-tools}
-  template:
-    metadata:
-      labels: {app: mcp-tools}
-    spec:
-      containers:
-        - name: mcp-tools
-          image: ghcr.io/your-org/support-mcp-tools:latest
-          ports:
-            - containerPort: 8001
+            # Migrations run before the listener starts.
+            initialDelaySeconds: 15
           resources:
             requests: {cpu: 100m, memory: 128Mi}
             limits: {cpu: 500m, memory: 512Mi}
@@ -156,13 +145,66 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
 ---
+# ClusterIP, not LoadBalancer. The gateway trusts the X-Candidate-Id header its
+# caller sends, so the web app must be its only client until real authentication
+# replaces that. See the README.
 apiVersion: v1
 kind: Service
 metadata:
-  name: mcp-tools
-  namespace: support-agent
+  name: gateway
+  namespace: reverse-interview
 spec:
-  selector: {app: mcp-tools}
+  type: ClusterIP
+  selector: {app: gateway}
   ports:
-    - port: 8001
-      targetPort: 8001
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: reverse-interview
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: web}
+  template:
+    metadata:
+      labels: {app: web}
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/your-org/reverse-interview-web:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef: {name: reverse-interview-config}
+            - secretRef: {name: reverse-interview-secrets}
+          readinessProbe:
+            httpGet: {path: /studio, port: 3000}
+          livenessProbe:
+            httpGet: {path: /studio, port: 3000}
+            initialDelaySeconds: 15
+          # PDF extraction happens here, in-process, on a candidate's upload.
+          # This is the memory-hungriest thing the app does.
+          resources:
+            requests: {cpu: 200m, memory: 256Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+---
+# The only public entry point. Put TLS and a managed WAF in front of this.
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: reverse-interview
+spec:
+  type: LoadBalancer
+  selector: {app: web}
+  ports:
+    - port: 80
+      targetPort: 3000

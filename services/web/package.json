@@ -10,17 +10,13 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "seed": "tsx scripts/seed.ts"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.42",
-    "@ai-sdk/openai": "4.0.47",
     "@base-ui/react": "^1.7.0",
     "@dnd-kit/core": "6.3.1",
     "@dnd-kit/sortable": "10.0.0",
     "@dnd-kit/utilities": "3.2.2",
-    "ai": "7.0.79",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "1.34.0",

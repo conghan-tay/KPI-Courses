@@ -1,24 +1,30 @@
-name: support-agent-template
+name: reverse-interview
+
+# Journey 1 of the chat-native tutoring POC (docs/productDocs/POC_UserJourney.md):
+# a candidate turns documents into a published knowledge base.
+#
+#   web      Next.js screens, and a BFF that turns uploads into text
+#   gateway  the Go API — knowledge bases, publishing, the ingest SSE stream, Postgres
+#   worker   the LangGraph ingestion pipeline, as Temporal activities
+#
+# MODEL_PROVIDER=fake needs no API key and replays docs/productDocs/fixtures, so
+# `docker compose up` gives a working demo out of the box.
 
 services:
-  # Journey 1 of the chat-native tutoring POC (docs/productDocs/POC_UserJourney.md).
-  # It serves its own /api/courses/* today and depends on nothing else in this
-  # stack; INGEST_MODE=live is the only setting that needs a model key.
   web:
     build:
       context: .
       dockerfile: services/web/Dockerfile
     environment:
-      INGEST_MODE: ${INGEST_MODE:-mock}
-      INGEST_MOCK_DELAY_MS: ${INGEST_MOCK_DELAY_MS:-700}
-      MODEL_PROVIDER: ${MODEL_PROVIDER:-anthropic}
-      MODEL_NAME: ${MODEL_NAME:-claude-opus-5}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Server-side only. A NEXT_PUBLIC_ variable would be baked into the client
+      # bundle, and the gateway is not reachable from a browser.
+      API_BASE_URL: http://gateway:8080
+      GATEWAY_API_KEY: ${API_KEY:-local-api-key}
     ports:
       - "3000:3000"
-    volumes:
-      - web_data:/app/.data
+    depends_on:
+      gateway:
+        condition: service_healthy
     restart: unless-stopped
 
   gateway:
@@ -29,25 +35,37 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       API_KEY: ${API_KEY:-local-api-key}
       GATEWAY_PORT: "8080"
+      DATABASE_URL: postgres://kb:kb@postgres:5432/kb?sslmode=disable
       REDIS_URL: redis://redis:6379/0
       TEMPORAL_ADDRESS: temporal:7233
       TEMPORAL_NAMESPACE: default
-      TEMPORAL_TASK_QUEUE: support-agent
-      APPROVAL_TIMEOUT_HOURS: ${APPROVAL_TIMEOUT_HOURS:-72}
-      # The gateway owns knowledge ingestion, so it embeds and writes to Chroma itself.
+      TEMPORAL_TASK_QUEUE: kb-ingest
+      INGEST_TIMEOUT_MINUTES: ${INGEST_TIMEOUT_MINUTES:-20}
+      # Retained for Journey 3's tutor; nothing reads these vectors back yet.
       CHROMA_URL: http://chroma:8000
-      CHROMA_COLLECTION: ${CHROMA_COLLECTION:-support_knowledge}
+      CHROMA_COLLECTION: ${CHROMA_COLLECTION:-kb_sections_vectors}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
       - "8080:8080"
     depends_on:
+      postgres:
+        condition: service_healthy
       temporal:
         condition: service_healthy
       redis:
         condition: service_healthy
       chroma:
         condition: service_started
+    healthcheck:
+      # Liveness, not readiness: the web service only needs the API to be up, and
+      # gating it on Temporal would mean a Temporal blip stops the studio from
+      # rendering a list Postgres could answer perfectly well.
+      test: ["CMD", "/gateway", "-healthcheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
     restart: unless-stopped
 
   worker:
@@ -56,31 +74,27 @@ services:
       dockerfile: services/agent/Dockerfile
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-development}
-      MODEL_PROVIDER: ${MODEL_PROVIDER:-openai}
-      MODEL_NAME: ${MODEL_NAME:-gpt-5-mini}
+      # `fake` replays docs/productDocs/fixtures/expected.json. Set a real
+      # provider and a key for genuine ingestion.
+      MODEL_PROVIDER: ${MODEL_PROVIDER:-fake}
+      MODEL_NAME: ${MODEL_NAME:-claude-opus-5}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
-      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-support-agent-template}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-reverse-interview}
       TEMPORAL_ADDRESS: temporal:7233
       TEMPORAL_NAMESPACE: default
-      TEMPORAL_TASK_QUEUE: support-agent
-      CHROMA_HOST: chroma
-      CHROMA_PORT: "8000"
-      CHROMA_SSL: "false"
-      CHROMA_COLLECTION: ${CHROMA_COLLECTION:-support_knowledge}
-      # Must match the gateway's EMBEDDING_MODEL: it writes the vectors this queries.
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
-      MCP_SERVER_URL: http://mcp-tools:8001/mcp
+      TEMPORAL_TASK_QUEUE: kb-ingest
+      FIXTURE_DIR: /app/fixtures
+      MAX_SECTIONS: ${MAX_SECTIONS:-16}
+      MAX_CHIPS: ${MAX_CHIPS:-8}
+      MAX_QUIZ_ITEMS: ${MAX_QUIZ_ITEMS:-12}
+      MAX_SOURCE_CHARS: ${MAX_SOURCE_CHARS:-400000}
     depends_on:
       temporal:
         condition: service_healthy
-      chroma:
-        condition: service_started
-      mcp-tools:
-        condition: service_started
     # No ports: the worker polls a Temporal task queue and serves no HTTP.
     healthcheck:
       test: ["CMD", "python", "-m", "app.healthcheck"]
@@ -90,9 +104,32 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  postgres:
+    # The data model from POC_UserJourney.md §1. The gateway owns the schema and
+    # applies migrations at boot, so there is no init script here.
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: kb
+      POSTGRES_PASSWORD: kb
+      POSTGRES_DB: kb
+    volumes:
+      # Postgres 18 stores data in a major-version subdirectory and wants the mount one
+      # level up. Mounting at /var/lib/postgresql/data — correct for 17 and earlier —
+      # makes the image refuse to start rather than silently misplace the data.
+      - postgres_data:/var/lib/postgresql
+    ports:
+      # Exposed so `make seed-kb` and psql work from the host.
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kb -d kb"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
   temporal:
     # The dev server keeps the local stack to one container and persists to SQLite, so
-    # a paused approval survives `docker compose restart`. Production uses a real
+    # an ingestion in flight survives `docker compose restart`. Production uses a real
     # Temporal cluster or Temporal Cloud; see docs/deployment.md.
     image: temporalio/temporal:1.8.2
     command:
@@ -117,6 +154,7 @@ services:
     ports:
       - "7233:7233"
       # Temporal Web UI. 8233 rather than its default 8080 to leave that to the gateway.
+      # Worth opening during an ingestion: one activity per document and per section.
       - "8233:8233"
     healthcheck:
       test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
@@ -126,6 +164,10 @@ services:
     restart: unless-stopped
 
   mcp-tools:
+    # Parked. Nothing in Journey 1 calls it, and the demo tools it serves belong
+    # to the support-ticket reference app. It stays because Journey 2's hour-long
+    # chat will need tools (fetch a section, run the gate, meter the cost) and
+    # this is where they will live.
     build:
       context: .
       dockerfile: services/mcp-tools/Dockerfile
@@ -136,6 +178,8 @@ services:
     restart: unless-stopped
 
   chroma:
+    # Not read by anything in Journey 1. Kept because Journey 3's tutor is the
+    # caller it exists for, and the gateway still writes to it via /v1/knowledge.
     image: chromadb/chroma:1.5.9
     volumes:
       - chroma_data:/data
@@ -158,7 +202,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  postgres_data:
   temporal_data:
   chroma_data:
   redis_data:
-  web_data:

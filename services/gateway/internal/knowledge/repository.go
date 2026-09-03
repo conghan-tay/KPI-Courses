@@ -8,10 +8,10 @@ package knowledge
 import (
 	"context"
 
-	"github.com/example/support-agent/services/gateway/internal/api"
+	"github.com/example/reverse-interview/services/gateway/internal/api"
 )
 
-// Repository is the write side of the knowledge base. It mirrors the Python
+// Repository is the write side of the vector store. It mirrors the Python
 // KnowledgeRepository seam so handlers stay testable without Chroma or OpenAI.
 type Repository interface {
 	Upsert(ctx context.Context, documents []api.KnowledgeDocument) (int, error)

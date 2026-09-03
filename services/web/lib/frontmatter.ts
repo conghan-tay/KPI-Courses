@@ -1,6 +1,6 @@
 /**
  * Minimal YAML frontmatter reader — enough for `title:`, `tagline:` and
- * `price_cents:` in docs/productDocs/fixtures/source.md, so dropping the
+ * `price_cents:` in docs/productDocs/fixtures/resume.md, so dropping the
  * fixture prefills the form instead of making you retype it. Nested keys and
  * lists are ignored rather than half-parsed.
  *

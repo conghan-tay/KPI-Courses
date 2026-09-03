@@ -1,9 +1,13 @@
+# Overrides for `make test-e2e`.
+#
+# compose.yaml already defaults the worker to the fixture model, but a developer with
+# MODEL_PROVIDER=anthropic in their .env would otherwise spend real money and get
+# non-deterministic output on every e2e run. Pinning it here makes the suite
+# deterministic whatever is in the environment.
+
 services:
   worker:
     environment:
-      # Deterministic chat model, so the E2E run costs nothing and asserts exactly.
-      # Retrieval still uses real embeddings: the gateway writes the vectors the worker
-      # reads, and that cross-language contract is precisely what E2E exists to prove.
       MODEL_PROVIDER: fake
       MODEL_NAME: fake
       LANGSMITH_TRACING: "false"

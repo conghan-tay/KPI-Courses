@@ -25,15 +25,15 @@ describe("extractFile", () => {
   it("reads markdown and strips frontmatter into meta", async () => {
     const extracted = await extractFile(
       file(
-        "source.md",
-        '---\ntitle: "Hold Your Number"\nprice_cents: 34900\n---\n\n# Part 1\n\nBody text.'
+        "resume.md",
+        '---\ntitle: "Arun Velasco"\ntagline: "Payments engineer."\n---\n\n# CV\n\nBody text.'
       )
     );
 
-    expect(extracted.meta.title).toBe("Hold Your Number");
-    expect(extracted.meta.price_cents).toBe("34900");
-    expect(extracted.text).toBe("# Part 1\n\nBody text.");
-    expect(extracted.text).not.toContain("price_cents");
+    expect(extracted.meta.title).toBe("Arun Velasco");
+    expect(extracted.meta.tagline).toBe("Payments engineer.");
+    expect(extracted.text).toBe("# CV\n\nBody text.");
+    expect(extracted.text).not.toContain("tagline");
   });
 
   it("rejects an empty file", async () => {

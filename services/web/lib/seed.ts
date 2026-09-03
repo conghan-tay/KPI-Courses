@@ -1,10 +1,11 @@
 // POC_UserJourney.md §0 — auth is a dev-mode role switcher over two seeded
-// users. Real auth is a Monday problem.
+// users. LinkedIn OAuth, the email approve/reject loop and magic links are all
+// real-auth problems, deferred.
 //
-// Dana Mercado is the specialist from docs/productDocs/fixtures/source.md, so
-// the seeded identity and the fixture course belong to the same person.
+// Arun Velasco is the candidate from docs/productDocs/fixtures/, so the seeded
+// identity and the fixture knowledge base belong to the same person.
 
-export type Role = "specialist" | "seeker";
+export type Role = "candidate" | "recruiter";
 
 export type User = {
   id: string;
@@ -17,24 +18,24 @@ export type User = {
 
 export const SEEDED_USERS: User[] = [
   {
-    id: "user-dana",
-    name: "Dana Mercado",
-    role: "specialist",
-    initials: "DM",
-    bio: "Eleven years selling industrial pumps into procurement departments. Six years running a 30-person B2B services firm. Now fixes pricing for services businesses doing $1M–$20M.",
+    id: "user-arun",
+    name: "Arun Velasco",
+    role: "candidate",
+    initials: "AV",
+    bio: "Payments engineer. Five and a half years on supplier payouts at Agoda — virtual card issuance, PSP failover, nightly reconciliation. Eleven years, four employers, one gap he will tell you about.",
   },
   {
-    id: "user-sam",
-    name: "Sam Okonkwo",
-    role: "seeker",
-    initials: "SO",
-    bio: "Runs a 12-person branding studio. Keeps losing deals at the proposal stage.",
+    id: "user-priya",
+    name: "Priya Raman",
+    role: "recruiter",
+    initials: "PR",
+    bio: "Technical recruiting for a card issuer. Screens twelve backend engineers a week and would rather screen three.",
   },
 ];
 
-export const DEFAULT_USER_ID = "user-dana";
+export const DEFAULT_USER_ID = "user-arun";
 
-export const USER_COOKIE = "kap_user";
+export const USER_COOKIE = "tri_user";
 
 export function findUser(id: string | undefined): User {
   return (

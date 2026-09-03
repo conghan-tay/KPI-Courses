@@ -1,6 +1,6 @@
 # DESIGN.md
 
-**Project:** Knowledge Access Platform — chat-native tutoring from Key People of Influence
+**Project:** The Reverse Interview — a candidate's knowledge base, interrogated by a recruiter
 **Design language:** `RISO POSTER` — two-ink risograph print, rendered as software
 **Platform:** Next.js (App Router) · Tailwind v4 · shadcn/ui · light theme only
 **Primary targets:** laptop 1280–1680 · tablet 768–1279 · mobile is a documented fallback, not a design target
@@ -10,7 +10,7 @@
 
 ## 1. Visual Theme & Atmosphere
 
-This product is one person's opinions, sold. The interface should feel like **a printed thing made by a person with a point of view** — a risograph gig poster, a zine, a small-press manifesto — not like a course platform.
+This product is one person's history and limits, stated plainly and sold by the hour. The interface should feel like **a printed thing made by a person with a point of view** — a risograph gig poster, a zine, a small-press manifesto — not like a hiring platform.
 
 Three commitments drive every rule below:
 
@@ -36,7 +36,7 @@ Three inks. One escape hatch. Nothing else.
 | `--ink` | `#000000` | Every border, every piece of body and UI text, primary button fill. The default. |
 | `--pink` | `#F2A0E7` | **Surface only.** Fills, highlighter blocks, active states, page surround, ticker text on black. |
 | `--paper` | `#FFFFFF` | The sheet. All content sits on this. |
-| `--paper-tint` | `#FDF4FB` | Pink at ~6%. Secondary surfaces inside the sheet: syllabus rail, code blocks, table stripes. |
+| `--paper-tint` | `#FDF4FB` | Pink at ~6%. Secondary surfaces inside the sheet: the section index, code blocks, table stripes. |
 | `--pink-wash` | `#FBE0F6` | Pink at ~20%. Pink-family surfaces that must hold small black text (citation expansions, callouts). |
 | `--pink-deep` | `#D466C4` | Pressed/active state of pink surfaces, and pink borders when a border must not be black. Never for text on white. |
 | `--ink-muted` | `#5C5C5C` | Secondary text on `--paper` **only**. Timestamps, helper text, placeholder. |
@@ -83,7 +83,7 @@ There is no green and no amber. State is carried by **fill, weight, and pattern*
 | Warning / thin result | 3px `--ink` border + hatch-filled left gutter, black text. No color change. |
 | Destructive / invalid | `--alert` — border and text only, never a large fill except on the confirm button. |
 
-Never encode state in hue alone: `--pink` also always changes the *shape* (outline circle → filled circle) so the syllabus rail is readable to a colorblind user and in a black-and-white screenshot.
+Never encode state in hue alone: `--pink` also always changes the *shape* (outline circle → filled circle) so the section index is readable to a colorblind user and in a black-and-white screenshot.
 
 ```css
 :root {
@@ -104,36 +104,36 @@ Never encode state in hue alone: `--pink` also always changes the *shape* (outli
 
 ## 3. Typography Rules
 
-Three families, each with a job. The split is semantic, not decorative — **the Specialist's words are set in serif; the application's own voice is set in grotesk.** A student reading a lesson should be able to tell, without reading, which sentences they paid for.
+Three families, each with a job. The split is semantic, not decorative — **the candidate's words are set in serif; the application's own voice is set in grotesk.** A recruiter reading a section should be able to tell, without reading, which sentences they paid for.
 
 | Family | Source | Used for |
 |---|---|---|
-| **Archivo** (variable, `wght` 400–900, `wdth` 62–125) | Google Fonts | Display, headings, all UI chrome, buttons, nav, the Seeker's own chat turns |
-| **Newsreader** (variable, `opsz` 6–72) | Google Fonts | Lesson bodies, the Specialist's chat turns, position `because` and `pushback`, citation quotes |
-| **DM Mono** (400, 500) | Google Fonts | Prices, lesson ordinals, progress %, turn counters, timestamps, IDs |
+| **Archivo** (variable, `wght` 400–900, `wdth` 62–125) | Google Fonts | Display, headings, all UI chrome, buttons, nav, the recruiter's own chat turns |
+| **Newsreader** (variable, `opsz` 6–72) | Google Fonts | Section bodies, the candidate's chat turns, chip `why_it_lands`, quiz rationales |
+| **DM Mono** (400, 500) | Google Fonts | Section ordinals, the hour's timer and cost meter, turn counters, section ids, timestamps |
 
 ### Scale
 
 | Token | Size / Line | Family & treatment | Used for |
 |---|---|---|---|
 | `display-xl` | 64 / 60 | Archivo 800, `wdth` 110, `-0.02em`, **UPPERCASE** | Marketing hero only. Max 4 words per line. |
-| `display-l` | 44 / 44 | Archivo 800, `-0.02em`, **UPPERCASE** | Page titles, position `claim` lines |
-| `display-m` | 32 / 34 | Archivo 800, `-0.01em`, **UPPERCASE** | Section heads, course title on `/c/:slug` |
-| `title` | 22 / 28 | Archivo 700, sentence case | Card titles, lesson titles, dialog headers |
-| `body-l` | 19 / 32 | Newsreader 400 | **Lesson body, Specialist chat turns.** The reading size. |
-| `body` | 16 / 26 | Archivo 400 | UI copy, forms, Seeker chat turns |
+| `display-l` | 44 / 44 | Archivo 800, `-0.02em`, **UPPERCASE** | Page titles, pre-roll headline |
+| `display-m` | 32 / 34 | Archivo 800, `-0.01em`, **UPPERCASE** | Section heads, the candidate's name on `/k/:slug` |
+| `title` | 22 / 28 | Archivo 700, sentence case | Card titles, section titles, chip text, dialog headers |
+| `body-l` | 19 / 32 | Newsreader 400 | **Section body, candidate chat turns.** The reading size. |
+| `body` | 16 / 26 | Archivo 400 | UI copy, forms, recruiter chat turns |
 | `body-s` | 14 / 22 | Archivo 400 | Helper text, secondary card copy |
 | `label` | 13 / 16 | Archivo 600, `+0.08em`, **UPPERCASE** | Buttons, tabs, nav, chips, table headers |
-| `meta` | 12 / 16 | DM Mono 400, `+0.06em`, **UPPERCASE** | Price, `LESSON III`, `30%`, `2 OF 5 LEFT` |
+| `meta` | 12 / 16 | DM Mono 400, `+0.06em`, **UPPERCASE** | `SECTION III`, `42:10 LEFT`, `$3.40 SO FAR`, section ids |
 
 ### Hard rules
 
-- **Uppercase is for ≤ 8 words.** Headlines, labels, buttons, ticker. Never a sentence, never body copy, never a lesson objective longer than a phrase. All-caps destroys word-shape recognition; it is a poster device, not a text device.
+- **Uppercase is for ≤ 8 words.** Headlines, labels, buttons, ticker. Never a sentence, never body copy, never a section title longer than a phrase. All-caps destroys word-shape recognition; it is a poster device, not a text device.
 - **Measure is capped at 68ch** for `body-l` and 72ch for `body`. In `/learn`, the thread column is `max-width: 68ch` regardless of viewport. Wide reading columns are the single most common way a brutalist layout becomes unreadable.
 - **Only one `display-xl` per page.** Ever.
 - Never letter-space lowercase text. Positive tracking is for caps only.
 - Never set Newsreader in caps. Never set Archivo 800 at body sizes.
-- Numerals: DM Mono is tabular by default — use it anywhere numbers change in place (progress %, turn counters), so nothing shifts.
+- Numerals: DM Mono is tabular by default — use it anywhere numbers change in place (the timer, the cost meter), so nothing shifts.
 
 ```ts
 // app/fonts.ts
@@ -178,34 +178,48 @@ Icon-only buttons are circles, never pills, and never below 44px.
 
 ### 4.2 Card / Sheet
 
-Square. `--bd` 2px black on `--paper`. No shadow at rest. A card that is *pickable* (course card, position card) gets `--lift` on hover plus `translate(-3px,-3px)`; a card that is merely a container never lifts.
+Square. `--bd` 2px black on `--paper`. No shadow at rest. A card that is *pickable* (a chip card, a section row) gets `--lift` on hover plus `translate(-3px,-3px)`; a card that is merely a container never lifts.
 
-### 4.3 Course card — `/` catalog
+### 4.3 Chip card — the review screen's Questions tab
+
+Eight of these are generated and the candidate picks three. The card is where that
+choice is made, so selection has to be legible at a glance and in greyscale: a chosen
+chip is filled `--pink` **and** carries a solid-ink `✓ ON YOUR FRONT PAGE` tag. Fill
+alone would fail a black-and-white screenshot; the tag alone would be quiet.
 
 ```
-┌──────────────────────────────────────┐  2px, square
-│  (◉) 64px avatar, duotoned,          │  circle, 3px black ring
-│      3px black ring                  │
-│                                      │
-│  RAHUL MEHTA            ← label caps │
-│  Pricing for B2B SaaS   ← title      │
-│  Stop guessing. Charge more than     │  body-s, --ink-muted
-│  feels comfortable.                  │
-│                                      │
-│  ▌ "If you have to sell hard, your   │  first positions[0].claim,
-│  ▌  offer is broken."                │  Newsreader italic, 3px pink left rule
-│                                      │
-│  ┌───────┐                           │
-│  │ $299  │  ← meta, pink block fill  │
-│  └───────┘                           │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────┐  3px border, --pink fill when chosen
+│  QUESTION 3          ✓ ON YOUR FRONT PAGE│  meta label · solid ink tag
+│                                          │
+│  WHAT THEY TYPE ───────────────────────  │  meta label
+│  ┌────────────────────────────────────┐  │  title 22px, --paper field
+│  │ why did he leave agoda?            │  │
+│  └────────────────────────────────────┘  │
+│                                          │
+│  REGISTER ─────────────────────────────  │  three pills; chosen one is ink-filled
+│  ( Skeptical )( Narrative )[ Blunt ]     │
+│                                          │
+│  WHY THIS ONE ─────────────────────────  │  body-l Newsreader italic
+│  Blunt, and every recruiter asks it      │  the candidate's private note
+│  eventually. One paragraph, no wandering.│
+│                                          │
+│  ANSWERS FROM ─────────────────────────  │  meta label
+│  career/timeline#agoda-exit              │  DM Mono 13px
+│                                          │
+│  [ SELECTED ] [ MAKE IT BLUNT ] [ DELETE]│  sm buttons
+└──────────────────────────────────────────┘
 ```
 
-Grid: 3-up at ≥1280, 2-up at 768–1279. Gap 24px.
+Grid: 2-up at ≥1280, 1-up below. Gap 24px.
+
+**The public form** is text only, on a pink pill, exactly as a recruiter taps it — and
+there is nothing to reveal, because `why_it_lands` and `kb_section` never reached the
+browser.
+
 
 ### 4.4 Avatar — duotone treatment (mandatory)
 
-Specialists upload arbitrary photographs. An unprocessed photo destroys a two-ink system instantly. Every avatar and hero portrait is duotoned to black + pink in CSS:
+Candidates upload arbitrary photographs. An unprocessed photo destroys a two-ink system instantly. Every avatar and hero portrait is duotoned to black + pink in CSS:
 
 ```css
 .riso-portrait {
@@ -219,55 +233,63 @@ Specialists upload arbitrary photographs. An unprocessed photo destroys a two-in
 }
 ```
 
-### 4.5 Position card — the paid asset
+### 4.5 The pre-roll card — the paid moment
 
-Three zones, three type treatments. This component is the product; give it the most care.
+`TheReverseInterview/pre_roll_wireframe.txt`, built. This is the last thing a recruiter
+reads before money moves, so it gets the most care.
 
 ```
-┌──────────────────────────────────────────┐  3px border
-│  CLAIM ────────────────────────────────  │  meta label
-│  ▓▓ If you have to sell hard, your ▓▓    │  display-l caps? NO —
-│  ▓▓ offer is broken. ▓▓                  │  title 22px, pink highlighter
-│                                          │
-│  BECAUSE ─────────────────────────────   │  meta label
-│  Persuasion is a tax you pay for a       │  body-l Newsreader
-│  weak offer. Fix the offer and the       │
-│  selling gets easy.                      │
-│                                          │
-│  WHEN THEY PUSH BACK ─────────────────   │  meta label
-│  ┌────────────────────────────────────┐  │  pink-wash fill, 1.5px border
-│  │ "My closing rate is fine" → then   │  │  body-l Newsreader italic
-│  │ you're leaving price on the table. │  │
-│  └────────────────────────────────────┘  │
-└──────────────────────────────────────────┘
+┌─ 3px black ─────────────────────────────────────┐
+│  SIXTY MINUTES. STARTS WHEN YOU HIT SEND.       │  display-m caps
+│                                                 │
+│  WHAT'S LOADED ───────────────────────────────  │  meta label
+│   ▸ Full timeline, four employers, gap included │  body-l Newsreader
+│   ▸ 6 systems I built, at architecture depth    │
+│   ▸ Bring your band, it'll say if it clears     │
+│   ▸ Opinions I'll defend and can't be talked    │
+│     out of                                      │
+│                                                 │
+│  ─────────────────────────────────────────────  │  2px rule
+│  $3.00 + MODEL COST. METER VISIBLE THROUGHOUT.  │  meta
+│                                                 │
+│        [ START MY HOUR ]                        │  lg primary
+└─────────────────────────────────────────────────┘
 ```
 
-**Locked variant** (`/c/:slug`, three cards, `because` hidden): the `BECAUSE` zone is replaced by a **halftone-filled block** of the correct height with a centred black pill reading `🔒 UNLOCK`. `WHEN THEY PUSH BACK` is not rendered at all.
+Exactly four bullets. A fifth is not a design problem to solve — it is dropped on save,
+and the editor renders the card live beside the textarea so that is visible rather than
+surprising.
 
-> ⚠️ **Engineering, not styling:** do not render the real text and blur it with CSS. `GET /api/courses/:slug` must omit `because` and `pushback` for unauthenticated requests. A `filter: blur()` is one devtools inspection away from giving the product away, and the whole conversion mechanic depends on it being withheld.
+> ⚠️ **Engineering, not styling:** `GET /api/kb/:id?audience=public` must omit the whole
+> quiz, plus `why_it_lands`, section bodies and `source_text`. This is stronger than the
+> usual withholding argument: the quiz is the gate before a recruiter books twenty real
+> minutes, so a `correct_index` in a devtools panel does not leak a teaser — it hands
+> over the answer key.
+
 
 ### 4.6 Chat thread — asymmetric by design
 
-**Do not use symmetric left/right bubbles.** The Specialist is publishing; the Seeker is interjecting. The geometry should say so.
+**Do not use symmetric left/right bubbles.** The candidate's agent is answering; the recruiter is interrogating. The geometry should say so.
 
 ```
-  ┌ RAHUL ─────────────────────────────────────┐   Specialist turn:
-  │ (◉)  What are you actually trying to do?    │   NO border, NO fill.
-  │      And what have you already tried that   │   Newsreader body-l 19/32,
-  │      didn't work?                           │   full 68ch column,
-  │                                             │   name in meta caps above,
-  │      ▸ FROM LESSON II                       │   32px avatar at left gutter.
+  ┌ ARUN ──────────────────────────────────────┐   Agent turn:
+  │ (◉)  Five and a half years on supplier      │   NO border, NO fill.
+  │      payouts. The interesting part was      │   Newsreader body-l 19/32,
+  │      never throughput — it was paying       │   full 68ch column,
+  │      twice.                                 │   name in meta caps above,
+  │                                             │   32px avatar at left gutter.
+  │      ▸ AGODA/SUPPLIER-PAYOUTS               │
   └─────────────────────────────────────────────┘
 
-                        ┌──────────────────────┐   Seeker turn:
-                        │ I charge $2k and     │   2px black border, square,
-                        │ close about 1 in 10. │   --paper-tint fill,
+                        ┌──────────────────────┐   Recruiter turn:
+                        │ does he have card    │   2px black border, square,
+                        │ issuing experience?  │   --paper-tint fill,
                         └──────────────────────┘   Archivo body 16/26,
                                                    max 44ch, right-aligned,
                                                    no avatar, no name.
 ```
 
-The Specialist's words get the page. The Seeker's get a box. Turn spacing: 32px between speakers, 12px within a speaker's consecutive turns.
+The candidate's words get the page. The recruiter's get a box. Turn spacing: 32px between speakers, 12px within a speaker's consecutive turns.
 
 **Streaming cursor:** a solid pink block, blinking in steps — not a fading dot triad.
 
@@ -281,32 +303,56 @@ The Specialist's words get the page. The Seeker's get a box. Turn spacing: 32px 
 
 ### 4.7 Citation chip
 
-`▸ FROM LESSON III` — pill, 1.5px black border, `meta` type, `--paper` fill. Hover: `--pink` fill. Click: expands *inline beneath the turn* into a bordered quote block, `--pink-wash` fill, 3px black left rule, Newsreader italic, with a `meta` caption naming the lesson. Expansion is instant — no height animation.
+`▸ AGODA/PSP-ROUTING#CIRCUIT-BREAKERS` — pill, 1.5px black border, `meta` type in DM
+Mono, `--paper` fill. Hover: `--pink` fill. Click: expands *inline beneath the turn* into
+a bordered quote block, `--pink-wash` fill, 3px black left rule, Newsreader italic, with
+a `meta` caption naming the section. Expansion is instant — no height animation.
 
-### 4.8 Syllabus rail — the roman numeral list
+The chip carries a section **id**, not a title, and that is deliberate on both sides: the
+recruiter can see the agent is citing something specific rather than gesturing, and the
+candidate reviewing their own knowledge base sees the exact string every chip and quiz
+item resolves against.
 
-Lifted directly from the reference: `I II III IV` in outlined circles down a rail.
+
+### 4.8 Section index — the roman numeral rail
+
+Lifted directly from the reference: `I II III IV` in outlined circles down a rail. What
+used to be a syllabus is the index of the knowledge base — what's loaded, in the order a
+stranger should read it.
 
 | State | Circle | Label |
 |---|---|---|
-| `passed` | 28px, fill `--ink`, `--paper` ✓ glyph | Archivo 600, `--ink`, strikethrough off |
-| `active` | 28px, fill `--pink`, 2px `--ink` border, roman numeral in `--ink` | Archivo 700, `--ink` |
-| `locked` | 28px, `--paper` fill, 2px `--ink-faint` border, numeral in `--ink-faint` | Archivo 400, `--ink-faint` |
+| `cited` — something references this section | 28px, fill `--ink`, `--paper` numeral | Archivo 700, `--ink` |
+| default | 28px, `--paper` fill, 2px `--ink` border, numeral in `--ink` | Archivo 400, `--ink` |
 
-Rail background `--paper-tint`, separated from the thread by a 3px black rule. Width 280px fixed. Labels are 15px/1.4 (not `body`) — at 280px with a 28px numeral and 20px padding, 16px wraps three-line titles badly. Numerals are DM Mono 500 at **10px**, not 12px: `VII` at `meta` size overflows a 28px circle.
+Rail background `--paper-tint`, separated from the content by a 3px black rule. Width
+280px fixed. Labels are 15px/1.4 (not `body`) — at 280px with a 28px numeral and 20px
+padding, 16px wraps three-line titles badly. Numerals are DM Mono 500 at **10px**, not
+12px: `VII` at `meta` size overflows a 28px circle.
 
-Do **not** put the pink highlighter behind the active label — it breaks across wrapped lines and looks like a rendering fault. The filled pink circle plus Archivo 700 is enough, and it survives greyscale.
+Filled versus outlined is a real distinction, not decoration: an uncited section is one
+no opening question and no quiz item points at, which is worth seeing before you publish.
+It survives greyscale, which the pink highlighter behind a label would not — that also
+breaks across wrapped lines and looks like a rendering fault.
 
-### 4.9 Progress meter — discrete blocks, not a bar
+
+### 4.9 The hour meter — discrete blocks, not a bar
+
+Journey 2. Specified here because it is the one place a number moves while somebody
+watches, and getting it wrong is expensive.
 
 ```
-PROGRESS                              30%
-┌───┬───┬───┬───┬───┬───┬───┐
-│▓▓▓│▓▓▓│   │   │   │   │   │   7 blocks = 7 lessons
-└───┴───┴───┴───┴───┴───┴───┘
+SIXTY MINUTES                     42:10 · $3.40
+┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+│▓▓▓│▓▓▓│▓▓▓│▓▓▓│   │   │   │   │   │   │   │   │   12 blocks = 5 minutes each
+└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
 ```
 
-2px black track, one cell per lesson, filled `--pink`. When `mark_progress` fires, the next block fills in a single `steps(1)` 140ms snap — no easing, no tween. This is the only reward animation in the product; a discrete *snap* reads as an achievement, a smooth fill reads as loading.
+2px black track, one cell per five minutes, filled `--pink`, each snapping in over
+`140ms steps(1)`. A discrete snap reads as time *spent*; a smooth fill reads as loading,
+and this is the one component where the difference is money. The clock and the running
+cost are DM Mono so nothing shifts as they tick.
+
 
 ### 4.10 Input / Textarea / Select
 
@@ -318,36 +364,49 @@ The chat composer is the exception: 3px border, 56px min height, auto-grows to 6
 
 ### 4.11 Tabs — file folder
 
-For `/studio/:id` (Positions · Syllabus · Voice). Square-topped tabs sitting on a 3px rule. Active tab: `--ink` fill, `--paper` label, and the rule beneath it is erased so the tab reads as connected to the panel. Inactive: `--paper` fill, `--ink` border, `--ink-muted` label.
+For `/studio/:id` (Questions · Knowledge base · Quiz · Pre-roll). Square-topped tabs
+sitting on a 3px rule. Active tab: `--ink` fill, `--paper` label, and the rule beneath it
+is erased so the tab reads as connected to the panel. Inactive: `--paper` fill, `--ink`
+border, `--ink-muted` label.
 
-### 4.12 The paywall card — `/c/:slug` sample chat
+Each tab carries a count, and the first one carries a ratio — `QUESTIONS · 2/3` — because
+publishing needs exactly three chosen and the tab bar is where that is legible without
+opening the tab.
 
-Not a chat bubble. It interrupts the thread as a black block:
+
+### 4.12 The gate card — `/gate/:id`
+
+Journey 3. Not a chat bubble: it interrupts as a black block, because it is the moment
+the product says no.
 
 ```
 ████████████████████████████████████████████
-█  ✕✕  YOU'RE 5 MESSAGES IN  ✕✕            █   --pink caps on --ink,
+█  ✕✕  ONE WRONG  ✕✕                       █   --pink caps on --ink,
 █                                          █   ticker treatment
-█  He's already found your constraint.     █   Newsreader, --paper
-█  There are 7 lessons and he'll keep      █
-█  asking until you can defend your        █
-█  number out loud.                        █
+█  Two of these four were right. We're     █   Newsreader, --paper
+█  not saying which — go back and read      █
+█  the sections on limits, then try again. █
 █                                          █
 █  ┌──────────────────────┐                █
-█  │  GET ACCESS — $299   │  accent button █
+█  │  FOUR NEW QUESTIONS  │  accent button █
 █  └──────────────────────┘                █
 ████████████████████████████████████████████
 ```
 
+Two rules the copy has to carry, and both are load-bearing: **never show which answer was
+correct**, and **resample on retry**, so a reload is not a free second attempt at the same
+four questions. Unlimited retries — the gate is a reading check, not a punishment.
+
+
 ### 4.13 Ticker strip
 
-Black bar, 44px, `--pink` `label` caps, `✕✕` separators, scrolling `translateX` at ~40s/loop. Two uses only: the app frame's bottom edge, and the sample-chat turn counter (`✕✕ 2 OF 5 EXCHANGES LEFT ✕✕`). `prefers-reduced-motion` → static, no scroll.
+Black bar, 44px, `--pink` `label` caps, `✕✕` separators, scrolling `translateX` at ~40s/loop. Two uses only: the app frame's bottom edge, and the hour's remaining time (`✕✕ 42 MINUTES LEFT ✕✕`). `prefers-reduced-motion` → static, no scroll.
 
 ### 4.14 Empty & loading states
 
-No spinners, no skeleton shimmer. A loading region is filled with the **halftone pattern**; a completed region replaces it with content. Ingestion (30–60s) shows a bordered panel with halftone fill, a `meta` line of streamed status (`READING 4 OF 11 FILES…`), and no progress percentage you can't honour.
+No spinners, no skeleton shimmer. A loading region is filled with the **halftone pattern**; a completed region replaces it with content. Ingestion (60–120s) shows a bordered panel with halftone fill, a `meta` line of streamed status (`WRITING SECTION 4 OF 14 · PSP ROUTING`), and no progress percentage you can't honour. The status lines are honest because each one is a real activity finishing, not a timer.
 
-Empty states are a bordered box on halftone with one `title` line and one action. Copy is blunt, never apologetic: *"No courses yet. Make one."*
+Empty states are a bordered box on halftone with one `title` line and one action. Copy is blunt, never apologetic: *"Nothing here yet. Build one."*
 
 > **Never set text directly on halftone.** The dots sit at 30% black and destroy small type. Halftone is always a *ground*; the words go in a `--paper` box with a 2px border floating on top of it. This applies to the dropzone, empty states, and the ingestion panel alike.
 
@@ -387,11 +446,11 @@ Every screen is a **sheet on a surround**. This is the app shell and it is the h
 
 | Screen | Split |
 |---|---|
-| `/` catalog | 12 → 3-up cards (4/4/4) |
-| `/c/:slug` | hero 7/5 (copy / portrait) · positions 12 (3-up) · sample chat 8, centred |
-| `/learn/:id` | rail 280px fixed + thread fluid, thread column capped 68ch and left-aligned in its area (not centred — the eye should not have to re-find the left edge as messages change length) |
-| `/studio/:id` | tab bar 12 · panel 8/4 (editor / live preview) |
-| `/checkout` | single 6-col column, centred |
+| `/k/:slug` | pre-roll card 7/5 (card / portrait) · 3 chips below, centred |
+| `/hour/:id` | section index 280px fixed + thread fluid, meter pinned to the rail's foot |
+| `/gate/:id` | single 6-col column, centred. One question at a time. |
+| `/studio/:id` | tab bar 12 · panel 8/4 (editor / live public preview) |
+| `/studio/new` | single 8-col column, centred |
 
 ### 5.4 Whitespace
 
@@ -408,7 +467,7 @@ There are **four planes** and no blur anywhere.
 | 0 · Surround | `--surround` flat pink | Outside the sheet |
 | 1 · Sheet | `--paper`, 3px `--ink` border | The app |
 | 2 · Raised | `--paper`, 2px border, `--lift` (`4px 4px 0 --ink`) | Hovered cards, dropdowns, popovers, chips in an active state |
-| 3 · Overlay | `--paper`, 3px border, `--lift-lg` (`8px 8px 0 --ink`) | Dialogs, the ingestion panel. Backdrop is `--pink` at 92% opacity — **not** black at 50%. A pink scrim keeps the print language; a black scrim looks like every other web app. |
+| 3 · Overlay | `--paper`, 3px border, `--lift-lg` (`8px 8px 0 --ink`) | Dialogs, the ingestion panel, the gate card. Backdrop is `--pink` at 92% opacity — **not** black at 50%. A pink scrim keeps the print language; a black scrim looks like every other web app. |
 
 Rules: elevation is never animated in blur or opacity, only in `transform` + shadow presence. Nothing has more than one shadow. Nested elevation is forbidden — a raised card inside a dialog is flat.
 
@@ -432,7 +491,7 @@ Rules: elevation is never animated in blur or opacity, only in `transform` + sha
 - ❌ A third hue. Not for charts, not for tags, not for "just this one badge." Use patterns and fills.
 - ❌ Uppercase body copy or uppercase anything over 8 words.
 - ❌ Symmetric chat bubbles. The asymmetry in §4.6 is load-bearing.
-- ❌ CSS-blurring locked content instead of withholding it server-side.
+- ❌ CSS-blurring withheld content instead of omitting it server-side. The quiz especially: a `correct_index` in a devtools panel is the answer key to the booking gate.
 - ❌ Easing curves. Motion in this system is stepped (see §9). No `cubic-bezier` smoothness.
 - ❌ Emoji as UI iconography. Use text glyphs (`✓ ▸ ✕ ●`) or a single stroke-only icon set (Lucide at 2px, black).
 - ❌ Softening the chrome to make `/learn` more comfortable. Fix comfort in the text column (measure, leading, serif), not by turning the poster down.
@@ -447,10 +506,10 @@ Desktop-first. Baseline 1280.
 | Breakpoint | Range | Behaviour |
 |---|---|---|
 | `lg` (baseline) | ≥1280 | Full spec. 32px surround, 3-up catalog, `/learn` rail visible. |
-| `md` (tablet — real target) | 768–1279 | 16px surround. Catalog 2-up. `/studio` preview panel collapses under the editor. `/learn` rail collapses into a sticky top strip: `[ ☰ II · SIZING ]` chip + inline progress meter; tapping opens the full rail as a left sheet at plane 3. All touch targets ≥44px — the `md` button size already satisfies this, so *never use `sm` buttons for primary actions on tablet*. `display-xl` steps down to 48/46. |
-| `sm` (fallback, not designed) | <768 | Surround → 0, frame border → 2px, meander rail hidden, ticker hidden. Single column throughout. Catalog 1-up. `/learn` is thread-only with the rail behind the ☰ chip. `display-l` → 32/34. Ship it working, not polished. |
+| `md` (tablet — real target) | 768–1279 | 16px surround. Catalog 2-up. `/studio` preview panel collapses under the editor. `/hour` section index collapses into a sticky top strip: `[ ☰ VII · PSP ROUTING ]` chip + the inline hour meter; tapping opens the full index as a left sheet at plane 3. All touch targets ≥44px — the `md` button size already satisfies this, so *never use `sm` buttons for primary actions on tablet*. `display-xl` steps down to 48/46. |
+| `sm` (fallback, not designed) | <768 | Surround → 0, frame border → 2px, meander rail hidden, ticker hidden. Single column throughout. Catalog 1-up. `/hour` is thread-only with the index behind the ☰ chip. `display-l` → 32/34. Ship it working, not polished. |
 
-Touch: hover-only affordances must have a non-hover equivalent. The card lift is decorative (fine); the citation chip's hover fill is not the only signal (the ▸ glyph rotates to ▾ on expand).
+Touch: hover-only affordances must have a non-hover equivalent. The card lift is decorative (fine); the citation chip's hover fill is not the only signal (the ▸ glyph rotates to ▾ on expand), and a selected chip carries a tag as well as a fill.
 
 ---
 
@@ -462,7 +521,7 @@ Print doesn't ease. Everything in this system moves in **steps**.
 |---|---|
 | Button hover/press | `transform 90ms steps(3)` |
 | Card lift | `transform 120ms steps(3)`, shadow toggles with no transition |
-| Progress block fill | `140ms steps(1)` — a snap, one block at a time |
+| Hour-meter block fill | `140ms steps(1)` — a snap, one block at a time |
 | Streaming caret | `1s steps(2, start)` infinite |
 | Ticker scroll | `translateX` linear, ~40s/loop |
 | Tab / panel switch | none. Instant. |
@@ -510,38 +569,69 @@ The four patterns are the identity. Without them this is generic neo-brutalism.
 
 ## 11. Screens
 
-Eight screens. Each entry is what an agent needs to build it.
+Journey 1 builds the candidate's four. The rest are specified so the language does not
+have to be reinvented when they land.
 
-### `/` — Catalog
-Frame → `display-xl` hero, two lines max, second line pink-highlighted → one `body-l` line of positioning → 3-up course cards (§4.3) → meander divider → footer ticker. No filters, no sort, no search in the POC.
+### `/studio` — the candidate's list
+Frame → `SectionHead` with the signed-in name and a count → a table, not cards (2px
+rules, `label` caps headers, `--paper-tint` zebra). Draft rows carry the hatch gutter
+from §2. Columns: name, sections, questions, quiz, status. One `lg accent` button:
+`BUILD ONE`. Empty state: *"Nothing here yet. Build one."*
 
-### `/c/:slug` — Course page (the conversion screen)
-1. **Hero**, 7/5. Left: `display-m` course title, `body-l` tagline, `meta` price in a pink block, `lg accent` button `GET ACCESS — $299`. Right: duotoned portrait (§4.4) at ~380px on a pink block with halftone corner fill — this is the poster moment, treat it like the reference image's bust.
-2. **`WHAT I'LL ARGUE WITH YOU ABOUT`** — `display-m`, then 3 locked position cards (§4.5).
-3. **Sample chat**, 8 cols centred, in a 3px bordered sheet with its own ticker header showing `✕✕ N OF 5 EXCHANGES LEFT ✕✕`. Three tappable prompt chips seed it. On turn 5, the paywall card (§4.12) appends beneath the completed reply.
-4. **Syllabus**, collapsed. Roman numerals + objectives only, no bodies.
+### `/studio/new` — upload
+Dropzone: 3px **dashed** black border (the only dashed border in the system), halftone
+fill, 240px tall, `title` copy *"Drop your documents here."* Then two inputs: your name,
+one line. **No price** — pricing is fixed at the platform level, so it is copy on the
+pre-roll rather than a field. One `lg primary` `BUILD MY KNOWLEDGE BASE`. Ingestion
+replaces the panel with the halftone loading state (§4.14).
 
-### `/checkout`
-6 cols centred. Bordered order summary (avatar, title, price in `meta`). One labelled textarea — **`WHAT ARE YOU TRYING TO DO IN THE NEXT 30 DAYS?`** — prefilled from the sample transcript when present, with a `body-s` `--ink-muted` note: *"He'll open with this."* Then `lg primary` `PAY $299`. The 800ms fake spinner is a halftone-filled bar, not a spinner.
+### `/studio/:id` — review
+Tabs (§4.11), **default to Questions**. That default is the reframe: eight openers were
+generated and the candidate is choosing which three represent them.
 
-### `/learn/:id` — The product
-280px rail (§4.8, progress meter §4.9, `[ASK RAHUL]` secondary button pinned bottom) + thread. Thread header is a thin bordered strip: duotoned 32px avatar, `RAHUL · LESSON II OF VII` in `meta`. Composer at §4.10.
+- **Questions · n/3** — chip cards (§4.3), 2-up, with the selection counter above the
+  grid as a bordered strip that fills `--pink` at exactly three. A dashed-border
+  `+ ADD A QUESTION` card ends the grid.
+- **Knowledge base · N** — reorderable section list, inline-edit title and summary,
+  collapsible body, and the section **id** editable in DM Mono. The id is not hidden:
+  renaming a section is how a candidate orphans three questions, and the warning that
+  follows makes more sense next to the field that caused it.
+- **Quiz · 12** — grouped under the four categories the gate samples from, each with an
+  `n / 3` counter. Four options per item, one radio-marked correct and filled `--pink`.
+- **Pre-roll** — headline and four bullets on the left, the §4.5 card rendered live on
+  the right.
 
-**The reorder moment.** After the Seeker answers the opening diagnostic, the rail visibly reorders: each moved lesson translates to its new position in `160ms steps(4)`, skipped lessons get the hatch treatment and drop to `--ink-faint`, and a `meta` line appears above the rail: `REORDERED FOR YOU · 2 SKIPPED`. Stagger the rows by 60ms. This is the single most important animation in the product — it is the entire argument against video — so it must be *seen*, which is why it's stepped and staggered rather than instant.
-
-### `/studio` — Course list
-Table, not cards. 2px rules, `label` caps headers, `--paper-tint` zebra. Draft rows carry the hatch strip (§2). One `lg accent` button: `BUILD A COURSE`.
-
-### `/studio/new` — Upload
-Dropzone: 3px **dashed** black border (the only dashed border in the system), halftone fill, 240px tall, `title` copy *"Drop your material here."* Then three inputs: title, tagline, price. One `lg primary` `BUILD MY COURSE`. Ingestion replaces the panel with the halftone loading state (§4.14).
-
-### `/studio/:id` — Review
-Tabs (§4.11), **default to Positions**. Position cards in editable form, 2-up, each with `KEEP · SOFTEN · DELETE` as `sm` buttons in the card footer, plus a dashed-border `+ ADD A STANCE` card at the end of the grid. Thin-results empty state, per the design doc: switch default tab to Syllabus and reframe the heading to `WHERE STUDENTS GET STUCK`.
+Right-hand 4-col panel: the public projection, re-fetched through `?audience=public`
+rather than rendered from memory, so it *proves* the withholding rule instead of
+imitating it.
 
 ### `/studio/:id/preview`
-`/learn` rendered inside a 3px bordered inset with a pink ticker strip pinned to its top: `✕✕ PREVIEW — NOT LIVE ✕✕`.
+The recruiter's landing view — the pre-roll card, the three chosen questions, the section
+index — rendered inside a 3px bordered inset with a ticker strip pinned to its top:
+`✕✕ PREVIEW — NOT LIVE ✕✕`. `START MY HOUR` is present and disabled.
 
----
+### `/k/:slug` — the public page  *(Journey 2)*
+Hero 7/5: duotoned portrait (§4.4) at ~380px on a pink block, name in `display-m`, the
+one-liner in `body-l`. Then the pre-roll card (§4.5), then the three chips as tappable
+pills. Section titles listed below, summaries only. `[ START MY HOUR ]` opens LinkedIn
+signup; approval is an email round trip, so the next screen a recruiter sees is a waiting
+state, and it should say so plainly rather than spin.
+
+### `/hour/:id` — the hour  *(Journey 2)*
+280px section index (§4.8) + thread (§4.6). The hour meter (§4.9) is pinned to the rail's
+foot and is visible throughout — it is the thing the recruiter is paying for and hiding it
+would be dishonest. Thread header: duotoned 32px avatar, `ARUN · 42 MINUTES LEFT` in
+`meta`. Composer at §4.10, with `[SUMMARISE & DOWNLOAD]` as an `sm` secondary button.
+
+### `/gate/:id` — four questions  *(Journey 3)*
+6 cols centred, one question at a time, four options as full-width bordered rows. On
+failure, the §4.12 card. Never reveal which answer was right; resample on retry.
+
+### `/book/:id` — twenty minutes  *(Journey 3)*
+6 cols centred. Calendar, then an order summary in `meta`, then `lg primary`
+`REQUEST 20 MINUTES — $20`. The candidate approves by email, so this ends in a waiting
+state too.
+
 
 ## 12. Implementation Notes (Next.js + Tailwind v4 + shadcn/ui)
 
@@ -549,18 +639,19 @@ Tabs (§4.11), **default to Positions**. Position cards in editable form, 2-up, 
 app/
   layout.tsx          ← fonts + <AppFrame>
   globals.css         ← @theme tokens, patterns, base
-  page.tsx            ← /
-  c/[slug]/page.tsx
-  checkout/page.tsx
-  learn/[id]/page.tsx
-  studio/…
+  page.tsx            ← / (redirects to /studio until Journey 2 lands)
+  studio/page.tsx  studio/new/page.tsx  studio/[id]/page.tsx  studio/[id]/preview
+  k/[slug]/page.tsx   ← Journey 2
+  hour/[id]  gate/[id]  book/[id]   ← Journeys 2 and 3
 components/
   frame/AppFrame.tsx  ← BUILD THIS FIRST. Surround + sheet + meander rail + ticker.
-  frame/Ticker.tsx
+  frame/Ticker.tsx  frame/RoleSwitcher.tsx
   ui/                 ← shadcn, retheme'd
-  course/CourseCard.tsx  PositionCard.tsx  RisoPortrait.tsx
-  chat/Thread.tsx  SpecialistTurn.tsx  SeekerTurn.tsx  CitationChip.tsx  Composer.tsx
-  learn/SyllabusRail.tsx  ProgressMeter.tsx
+  kb/ChipCard.tsx  kb/RisoPortrait.tsx
+  interview/PreRollCard.tsx  interview/SectionIndex.tsx  interview/RecruiterPreview.tsx
+  studio/ChipsTab  SectionsTab  QuizTab  PreRollTab  PublicPreviewPanel  KBTable
+  chat/Thread.tsx  AgentTurn.tsx  RecruiterTurn.tsx  CitationChip.tsx  Composer.tsx
+                      ← Journey 2; not built
 ```
 
 ```css
@@ -593,14 +684,15 @@ components/
 **shadcn components to install:** `button dialog tabs scroll-area textarea input avatar tooltip separator dropdown-menu`. Retheme by editing the copied files, not by wrapping them.
 Two global overrides to apply immediately after `npx shadcn init`, because its defaults fight this system: set every `rounded-md` to `rounded-none` (except Button → `rounded-full`), and delete every `shadow-sm`/`shadow-md` in favour of `shadow-lift`.
 
-**Build order** (mapped onto the Sat/Sun plan in `FirstDesign.md`):
+**Build order:**
 1. `AppFrame` + tokens + fonts. Half an hour, and every subsequent screen inherits the look for free.
-2. `Thread` + `SpecialistTurn` / `SeekerTurn` + `Composer` — this is `/learn`, which is 90% of the product.
-3. `SyllabusRail` + `ProgressMeter` + `CitationChip`.
-4. `PositionCard` (locked + editable variants) — reused across `/c/:slug` and `/studio/:id`.
-5. `CourseCard`, checkout, ticker polish.
+2. `ChipCard` — the review screen's Questions tab is where a candidate spends their time, and the card is reused verbatim on `/k/:slug` in its public form.
+3. `PreRollCard` + `SectionIndex` — the two components `/studio/:id/preview` and `/k/:slug` share.
+4. `SectionsTab`, `QuizTab`, `PublicPreviewPanel` — the rest of the review screen.
+5. `KBTable`, the dropzone, ticker polish.
+6. *Journey 2:* `Thread` + `AgentTurn` / `RecruiterTurn` + `Composer` + the hour meter.
 
-**Accessibility checklist before demo:** black 3px focus ring visible on every interactive element (never `outline: none`); rail states distinguishable in greyscale; `aria-live="polite"` on the streaming turn; `prefers-reduced-motion` honoured on ticker, caret, and progress; every duotoned portrait has real `alt` text.
+**Accessibility checklist before demo:** black 3px focus ring visible on every interactive element (never `outline: none`); section-index states distinguishable in greyscale; `aria-live="polite"` on the streaming turn; `prefers-reduced-motion` honoured on ticker, caret, and the hour meter; the selected-chip state readable without colour; every duotoned portrait has real `alt` text.
 
 ---
 
@@ -610,7 +702,7 @@ Two global overrides to apply immediately after `npx shadcn init`, because its d
 
 **Prompt — a new screen**
 
-> Build `<screen>` following DESIGN.md. Wrap it in `<AppFrame>`. Two inks only: black `#000000` and pink `#F2A0E7` on white — pink is a surface, never text. Square containers with 2–3px black borders, pill buttons, hard offset shadows (`4px 4px 0 #000`) with zero blur. Archivo 800 uppercase for headings (≤8 words), Newsreader 19/32 for any content the Specialist "said", DM Mono uppercase for numbers. Use the halftone pattern for anything absent, locked, or loading — never a spinner or skeleton shimmer. Transitions use `steps()`, never easing. Cap reading columns at 68ch.
+> Build `<screen>` following DESIGN.md. Wrap it in `<AppFrame>`. Two inks only: black `#000000` and pink `#F2A0E7` on white — pink is a surface, never text. Square containers with 2–3px black borders, pill buttons, hard offset shadows (`4px 4px 0 #000`) with zero blur. Archivo 800 uppercase for headings (≤8 words), Newsreader 19/32 for any content the candidate "said", DM Mono uppercase for numbers. Use the halftone pattern for anything absent, locked, or loading — never a spinner or skeleton shimmer. Transitions use `steps()`, never easing. Cap reading columns at 68ch.
 
 **Prompt — a new component**
 
@@ -618,4 +710,4 @@ Two global overrides to apply immediately after `npx shadcn init`, because its d
 
 **Prompt — reviewing generated UI**
 
-> Check this against DESIGN.md and list violations: pink used as text on white; any border-radius between 1px and 998px on a container; blurred shadows or gradients; a third hue; uppercase runs over 8 words; reading columns over 68ch; eased transitions; spinners or shimmer skeletons; symmetric chat bubbles; locked content rendered then CSS-blurred.
+> Check this against DESIGN.md and list violations: pink used as text on white; any border-radius between 1px and 998px on a container; blurred shadows or gradients; a third hue; uppercase runs over 8 words; reading columns over 68ch; eased transitions; spinners or shimmer skeletons; symmetric chat bubbles; withheld content rendered then CSS-blurred; state carried by fill alone with no second signal.

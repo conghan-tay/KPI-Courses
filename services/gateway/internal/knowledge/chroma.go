@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/example/support-agent/services/gateway/internal/api"
+	"github.com/example/reverse-interview/services/gateway/internal/api"
 )
 
 // ChromaConfig describes the collection this gateway writes into.

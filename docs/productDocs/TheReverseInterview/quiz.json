@@ -1,0 +1,162 @@
+{
+  "description" : "Four MCQs sampled from a pool of twelve; all four must be right. On failure show which were wrong, never the correct answer, and resample on retry so a reload isn't a free coin flip",
+  "example_prompt" : "docs/productDocs/TheReverseInterview/quiz_example_prompt.json",
+  "data" : [
+    {
+      "id": "q01",
+      "question": "What opens the per-PSP circuit breaker in the payouts platform?",
+      "choices": [
+        "Five consecutive failures, or a \u003E20% error rate over 60 seconds",
+        "Any single 5xx response",
+        "Three timeouts in a row",
+        "A manual toggle in the ops console"
+      ],
+      "correct_index": 0,
+      "rationale": "agoda-payouts.md, 'Circuit breakers'. The thresholds are stated exactly.",
+      "source_section": "agoda/psp-routing#circuit-breakers"
+    },
+    {
+      "id": "q02",
+      "question": "Why did the original breaker miss the PSP-B incident?",
+      "choices": [
+        "The breaker was misconfigured",
+        "PSP-B degraded on latency without raising errors",
+        "The alert routing was broken",
+        "The incident happened during a deploy freeze"
+      ],
+      "correct_index": 1,
+      "rationale": "p99 went 210ms → 9s with no error-rate signal. This is opinion #1 in kb.md, demonstrated.",
+      "source_section": "agoda/psp-routing#circuit-breakers"
+    },
+    {
+      "id": "q03",
+      "question": "What is the payout idempotency key derived from?",
+      "choices": [
+        "A UUID generated per request",
+        "The PSP's own transaction reference",
+        "(payout_id, attempt_number), generated and persisted before the call",
+        "A hash of the card token"
+      ],
+      "correct_index": 2,
+      "rationale": "Must be deterministic and must survive process death — that's the whole point of persisting it first.",
+      "source_section": "agoda/supplier-payouts#idempotency"
+    },
+    {
+      "id": "q04",
+      "question": "How many mismatch classes does the nightly reconciliation produce?",
+      "choices": [
+        "Two",
+        "Four",
+        "Seven",
+        "It's a free-text field"
+      ],
+      "correct_index": 1,
+      "rationale": "AMOUNT_DRIFT, TIMING_SKEW, DUPLICATE_ISSUANCE, ORPHAN_AUTH.",
+      "source_section": "agoda/reconciliation#spark-pipeline"
+    },
+    {
+      "id": "q05",
+      "question": "Which reconciliation mismatch class pages a human immediately?",
+      "choices": [
+        "AMOUNT_DRIFT",
+        "TIMING_SKEW",
+        "DUPLICATE_ISSUANCE",
+        "All of them"
+      ],
+      "correct_index": 2,
+      "rationale": "Duplicate issuance means real money left twice. ORPHAN_AUTH is manual but does not page.",
+      "source_section": "agoda/reconciliation#spark-pipeline"
+    },
+    {
+      "id": "q06",
+      "question": "What isolation level do the payout queue workers run at?",
+      "choices": [
+        "SERIALIZABLE",
+        "REPEATABLE READ",
+        "READ COMMITTED",
+        "READ UNCOMMITTED"
+      ],
+      "correct_index": 2,
+      "rationale": "READ COMMITTED with SELECT … FOR UPDATE SKIP LOCKED.",
+      "source_section": "postgres/queue-workers"
+    },
+    {
+      "id": "q07",
+      "question": "Why was SERIALIZABLE rejected for the queue?",
+      "choices": [
+        "Postgres doesn't support it at this volume",
+        "Serialization failures became a retry storm, and the correctness it bought was already explicit in the idempotency key plus advisory lock",
+        "The ORM didn't expose it",
+        "It was never evaluated"
+      ],
+      "correct_index": 1,
+      "rationale": "He calls this the most arguable decision in the system and defends it without claiming it's obvious.",
+      "source_section": "postgres/queue-workers"
+    },
+    {
+      "id": "q08",
+      "question": "What happens to a payable when all three PSP breakers are open?",
+      "choices": [
+        "The payout fails and the supplier is notified",
+        "It parks in a deferred state and a retry sweep picks it up",
+        "It falls back to bank transfer",
+        "It routes to a fourth PSP"
+      ],
+      "correct_index": 1,
+      "rationale": "And he says he'd model deferred explicitly from day one next time — an operational problem should not surface as a data problem.",
+      "source_section": "agoda/psp-routing#deferred"
+    },
+    {
+      "id": "q09",
+      "question": "Roughly what share of reconciliation mismatches auto-resolve?",
+      "choices": [
+        "About 60%",
+        "About 78%",
+        "About 94%",
+        "About 99.9%"
+      ],
+      "correct_index": 2,
+      "rationale": "The remaining ~6% lands in an ops queue with a class and a suggested action.",
+      "source_section": "agoda/reconciliation#spark-pipeline"
+    },
+    {
+      "id": "q10",
+      "question": "What is his actual relationship to NodusArt?",
+      "choices": [
+        "Founding engineer",
+        "Unpaid advisor — no commits, no equity, no on-call",
+        "Contract backend developer",
+        "He built the smart contracts"
+      ],
+      "correct_index": 1,
+      "rationale": "The KB is deliberate about not upgrading this into 'Web3 engineer'.",
+      "source_section": "nodusart/advisory"
+    },
+    {
+      "id": "q11",
+      "question": "What did he advise NodusArt to put on-chain?",
+      "choices": [
+        "The full provenance record",
+        "A content hash of the record plus a timestamp",
+        "Nothing — he argued against using a chain at all",
+        "The model's authenticity score"
+      ],
+      "correct_index": 1,
+      "rationale": "Two orders of magnitude cheaper, and makes the record editable-with-history rather than immutable-and-wrong.",
+      "source_section": "nodusart/advisory"
+    },
+    {
+      "id": "q12",
+      "question": "How does he describe his machine learning background?",
+      "choices": [
+        "Production ML engineer",
+        "Undergraduate level and roughly seven years stale",
+        "Self-taught but current",
+        "He doesn't discuss it"
+      ],
+      "correct_index": 1,
+      "rationale": "Stated as a known gap. A candidate brief that claims otherwise has failed the no-invention rule.",
+      "source_section": "ml/currency"
+    }
+  ]
+}

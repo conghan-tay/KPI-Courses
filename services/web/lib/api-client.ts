@@ -1,18 +1,16 @@
 import type {
-  Course,
-  CoursePatch,
-  CourseSummary,
   IngestEvent,
-  PublicCourse,
+  KBPatch,
+  KBSummary,
+  KnowledgeBase,
+  PublicKB,
 } from "@/lib/types";
 
 /**
  * The only place a screen touches the network.
  *
- * Today these routes are served by this app's own route handlers. When the Go
- * gateway grows `/api/courses/*`, pointing at it is `NEXT_PUBLIC_API_BASE` and
- * nothing else — no component changes, no new fetch calls scattered through
- * pages.
+ * These routes are served by this app's own route handlers, which proxy to the
+ * Go gateway. Screens stay same-origin and never see the API key.
  */
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
@@ -58,55 +56,66 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-export async function listCourses(): Promise<CourseSummary[]> {
-  const { courses } = await request<{ courses: CourseSummary[] }>(
-    "/api/courses"
+export async function listKnowledgeBases(): Promise<KBSummary[]> {
+  const { knowledge_bases } = await request<{ knowledge_bases: KBSummary[] }>(
+    "/api/kb"
   );
-  return courses;
+  return knowledge_bases;
 }
 
-export async function getCourse(id: string): Promise<Course> {
-  const { course } = await request<{ course: Course }>(`/api/courses/${id}`);
-  return course;
-}
-
-/** The projection a stranger gets. See lib/serialize.ts. */
-export async function getPublicCourse(id: string): Promise<PublicCourse> {
-  const { course } = await request<{ course: PublicCourse }>(
-    `/api/courses/${id}?audience=public`
+export async function getKnowledgeBase(id: string): Promise<KnowledgeBase> {
+  const { knowledge_base } = await request<{ knowledge_base: KnowledgeBase }>(
+    `/api/kb/${id}`
   );
-  return course;
+  return knowledge_base;
 }
 
-export async function patchCourse(
+/**
+ * The projection a stranger gets. Applied by the Go API — see ToPublic in
+ * services/gateway/internal/kb/kb.go — so the preview panel proves the
+ * withholding rule rather than imitating it. In particular there is no quiz in
+ * this payload, and that is a security control: the quiz gates booking real
+ * time, and a leaked `correct_index` makes the gate a formality.
+ */
+export async function getPublicKB(id: string): Promise<PublicKB> {
+  const { knowledge_base } = await request<{ knowledge_base: PublicKB }>(
+    `/api/kb/${id}?audience=public`
+  );
+  return knowledge_base;
+}
+
+export async function patchKnowledgeBase(
   id: string,
-  patch: CoursePatch
-): Promise<Course> {
-  const { course } = await request<{ course: Course }>(`/api/courses/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(patch),
-  });
-  return course;
+  patch: KBPatch
+): Promise<KnowledgeBase> {
+  const { knowledge_base } = await request<{ knowledge_base: KnowledgeBase }>(
+    `/api/kb/${id}`,
+    { method: "PATCH", body: JSON.stringify(patch) }
+  );
+  return knowledge_base;
 }
 
-export async function publishCourse(
+export async function publishKnowledgeBase(
   id: string
-): Promise<{ course: Course; url: string }> {
-  return request<{ course: Course; url: string }>(
-    `/api/courses/${id}/publish`,
+): Promise<{ knowledge_base: KnowledgeBase; url: string }> {
+  return request<{ knowledge_base: KnowledgeBase; url: string }>(
+    `/api/kb/${id}/publish`,
     { method: "POST" }
   );
 }
 
-export async function softenPosition(
+/** Rewrite one opening question, optionally in a different register. */
+export async function rephraseChip(
   id: string,
-  index: number
-): Promise<Course> {
-  const { course } = await request<{ course: Course }>(
-    `/api/courses/${id}/positions/${index}/soften`,
+  index: number,
+  register?: string
+): Promise<KnowledgeBase> {
+  const query = register ? `?register=${encodeURIComponent(register)}` : "";
+  const { knowledge_base } = await request<{ knowledge_base: KnowledgeBase }>(
+    `/api/kb/${id}/chips/${index}/rephrase${query}`,
     { method: "POST" }
   );
-  return course;
+  return knowledge_base;
 }
 
 /**
@@ -114,11 +123,11 @@ export async function softenPosition(
  * a POST with a reader. Yields every server-sent event in order; the caller
  * decides what to do with `status`, `draft`, `result` and `error`.
  */
-export async function* ingestCourse(
+export async function* ingestKnowledgeBase(
   body: FormData,
   signal?: AbortSignal
 ): AsyncGenerator<IngestEvent> {
-  const response = await fetch(`${BASE}/api/courses/ingest`, {
+  const response = await fetch(`${BASE}/api/kb/ingest`, {
     method: "POST",
     body,
     signal,
@@ -136,11 +145,11 @@ export async function* ingestCourse(
   yield* readEventStream(response.body, signal);
 }
 
-export async function* reingestCourse(
+export async function* reingestKnowledgeBase(
   id: string,
   signal?: AbortSignal
 ): AsyncGenerator<IngestEvent> {
-  const response = await fetch(`${BASE}/api/courses/${id}/reingest`, {
+  const response = await fetch(`${BASE}/api/kb/${id}/reingest`, {
     method: "POST",
     signal,
   });

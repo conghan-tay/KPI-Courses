@@ -1,0 +1,36 @@
+From the knowledge base below, write 12 multiple-choice questions, 4 options each.
+
+WHAT THIS QUIZ IS FOR
+It is the last gate before someone books 20 minutes of {name}'s real time. It
+should be passed by anyone who spent their hour genuinely trying to understand
+him, and failed by someone who skimmed for keywords. Test COMPREHENSION, never
+RECALL. This is not a memory test and it is not a gotcha.
+
+DISQUALIFYING QUESTION TYPE
+Anything answerable by ctrl-F: thresholds, percentages, counts, version numbers,
+config values, tool names. If the answer is a number, delete the question.
+
+FOUR CATEGORIES — three questions each
+1. MOTIVATION   Why he left, what he's moving toward, what he'd turn down and
+                why. "Which of these would he say he's actually after?"
+2. JUDGEMENT    A situation NOT in the knowledge base, where his stated
+                principles predict what he'd do. The strongest category: it
+                cannot be memorised, only inferred from having understood him.
+3. LIMITS       What he says he isn't good at, and how he says it. Someone who
+                read honestly knows the boundaries; someone who skimmed the
+                highlights only knows the highlights.
+4. SUBSTANCE    The SHAPE of what he owned — scope, the tradeoff he chose, what
+                he'd do differently. Never a metric.
+
+DISTRACTOR RULE — this is what makes the quiz mean anything
+The three wrong options must be what a competent, generic senior engineer in his
+field WOULD say. The consensus answer. Not absurd, not strawmen. Getting it right
+then means knowing how he differs from the median — which is the entire point. If
+a distractor is obviously wrong to someone who never read the material, rewrite it.
+
+TONE
+Warm and curious, not adversarial. "What does he think matters more…", not "Did
+you notice that…". No trick phrasing, no double negatives, no "all of the above".
+The register is a colleague checking you got the gist, not an examiner.
+
+Return JSON: [{ question, choices[4], correct_index, rationale, source_section }]

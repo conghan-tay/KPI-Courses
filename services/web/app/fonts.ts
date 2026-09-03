@@ -1,7 +1,7 @@
 import { Archivo, DM_Mono, Newsreader } from "next/font/google";
 
 // DESIGN.md §3 — three families, each with a job. The split is semantic, not
-// decorative: the Specialist's words are serif, the application's own voice is
+// decorative: the candidate's words are serif, the application's own voice is
 // grotesk, and anything that is a number is mono.
 
 export const archivo = Archivo({

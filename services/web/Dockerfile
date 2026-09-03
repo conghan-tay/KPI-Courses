@@ -1,5 +1,4 @@
-# Build context is the repository root, so the fixture the mock ingestion mode
-# replays can be copied in alongside the app.
+# Build context is the repository root, matching the other services.
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY services/web/package.json services/web/package-lock.json ./
@@ -20,18 +19,19 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
-# The JSON course store and the ingestion fixture both live on disk. Mount a
-# volume at /app/.data to keep drafts across a redeploy.
-ENV DATA_DIR=/app/.data
-ENV FIXTURE_DIR=/app/fixtures
+# Next's standalone server binds whatever HOSTNAME says, and Docker sets HOSTNAME to
+# the container id. Resolving that depends on the embedded DNS answering about the
+# container itself, which fails intermittently with EAI_AGAIN during startup and
+# crash-loops the container. Binding the wildcard removes the dependency entirely.
+ENV HOSTNAME=0.0.0.0
+# This app holds no state. Courses live in Postgres behind the Go API, so there is
+# nothing here to mount a volume for.
 
 RUN addgroup -S -g 1001 nodejs && adduser -S -u 1001 -G nodejs nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --chown=nextjs:nodejs docs/productDocs/fixtures ./fixtures
-RUN mkdir -p /app/.data && chown nextjs:nodejs /app/.data
 
 USER nextjs
 EXPOSE 3000

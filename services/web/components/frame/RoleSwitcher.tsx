@@ -14,13 +14,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { RisoPortrait } from "@/components/course/RisoPortrait";
+import { RisoPortrait } from "@/components/kb/RisoPortrait";
 import { SEEDED_USERS, type User } from "@/lib/seed";
 
-// POC_UserJourney.md §0 — "Sign in as Specialist / Seeker", two seeded users,
+// POC_UserJourney.md §0 — "Sign in as Candidate / Recruiter", two seeded users,
 // no real auth. Switching is a server action (app/actions.ts) that sets the
 // cookie `getCurrentUser()` reads, so the re-render already has the new
-// identity. Journey 1 only ever needs the Specialist.
+// identity. Journey 1 only ever needs the candidate.
 
 export function RoleSwitcher({ user }: { user: User }) {
   const [pending, startTransition] = useTransition();

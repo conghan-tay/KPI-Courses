@@ -41,10 +41,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local JSON course store and e2e scratch data
-/.data
-/.data-e2e
-
 # playwright
 /test-results
 /playwright-report

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatPrice, slugify, toRoman } from "@/lib/text";
+import { firstSentence, slugify, toRoman } from "@/lib/text";
 
 describe("toRoman", () => {
   it.each([
@@ -23,19 +23,22 @@ describe("toRoman", () => {
 });
 
 describe("slugify", () => {
+  // A twin of Slugify in services/gateway/internal/kb/kb.go. The two must agree,
+  // or a knowledge base gets one URL from the server and a different one in a
+  // client-side preview.
   it("lowercases and hyphenates", () => {
-    expect(slugify("Hold Your Number")).toBe("hold-your-number");
+    expect(slugify("Arun Velasco")).toBe("arun-velasco");
   });
 
   it("strips punctuation and accents", () => {
-    expect(slugify("Précis: what's *actually* true?!")).toBe(
-      "precis-what-s-actually-true"
+    expect(slugify("José Álvarez: what's *actually* true?!")).toBe(
+      "jose-alvarez-what-s-actually-true"
     );
   });
 
   it("never produces a leading, trailing or empty slug", () => {
-    expect(slugify("  —  ")).toBe("course");
-    expect(slugify("!!!")).toBe("course");
+    expect(slugify("  —  ")).toBe("candidate");
+    expect(slugify("!!!")).toBe("candidate");
     expect(slugify("--hi--")).toBe("hi");
   });
 
@@ -46,12 +49,13 @@ describe("slugify", () => {
   });
 });
 
-describe("formatPrice", () => {
-  it("shows whole dollars without decimals", () => {
-    expect(formatPrice(34900)).toBe("$349");
+describe("firstSentence", () => {
+  it("collapses whitespace and leaves short text alone", () => {
+    expect(firstSentence("one   two\nthree")).toBe("one two three");
   });
 
-  it("keeps cents when they exist", () => {
-    expect(formatPrice(34950)).toBe("$349.50");
+  it("truncates on a word boundary", () => {
+    const long = "alpha beta gamma delta epsilon";
+    expect(firstSentence(long, 12)).toBe("alpha beta…");
   });
 });

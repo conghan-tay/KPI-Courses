@@ -1,29 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button, ButtonLink } from "@/components/ui/button";
+import { ChipsTab } from "@/components/studio/ChipsTab";
 import { IngestPanel } from "@/components/studio/IngestPanel";
 import { Notice } from "@/components/riso/Notice";
-import { PositionsTab } from "@/components/studio/PositionsTab";
+import { PreRollTab } from "@/components/studio/PreRollTab";
 import { PublicPreviewPanel } from "@/components/studio/PublicPreviewPanel";
 import { PublishDialog } from "@/components/studio/PublishDialog";
-import { SyllabusTab } from "@/components/studio/SyllabusTab";
+import { QuizTab } from "@/components/studio/QuizTab";
+import { SectionsTab } from "@/components/studio/SectionsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { VoiceTab } from "@/components/studio/VoiceTab";
-import { useCourseDraft } from "@/components/studio/useCourseDraft";
-import { ApiRequestError, publishCourse, reingestCourse } from "@/lib/api-client";
-import { isThinOnPositions } from "@/lib/quotes";
-import { formatPrice } from "@/lib/text";
-import type { Course } from "@/lib/types";
+import { useKBDraft } from "@/components/studio/useKBDraft";
+import {
+  ApiRequestError,
+  publishKnowledgeBase,
+  reingestKnowledgeBase,
+} from "@/lib/api-client";
+import { auditRefs } from "@/lib/refs";
+import { SELECTED_CHIP_COUNT } from "@/lib/types";
+import type { KnowledgeBase } from "@/lib/types";
 
 // /studio/:id — the review screen, and the one that matters.
 //
-// It defaults to Positions, not Syllabus. That is the reframe: it tells the
-// Specialist their opinions are the asset. When the material didn't yield many
-// stances it defaults to Syllabus instead and reframes around where students
-// get stuck, rather than showing someone a screen implying they're boring.
+// It defaults to Questions, not the knowledge base. That is the reframe: eight
+// openers were generated and the candidate is choosing which three represent
+// them. It is the decision they will actually want to make, and the one that
+// decides what a stranger sees.
 
 const SAVE_LABEL = {
   idle: "",
@@ -32,29 +37,47 @@ const SAVE_LABEL = {
   error: "Not saved — check your connection",
 } as const;
 
-export function ReviewScreen({
-  initialCourse,
-  unanchoredClaims,
-}: {
-  initialCourse: Course;
-  unanchoredClaims: string[];
-}) {
+export function ReviewScreen({ initial }: { initial: KnowledgeBase }) {
   const router = useRouter();
-  const { course, saveState, apply, flush, replace } =
-    useCourseDraft(initialCourse);
+  const { knowledgeBase, saveState, apply, flush, replace } = useKBDraft(initial);
 
-  const thin = isThinOnPositions(course.positions);
-  const [tab, setTab] = useState(thin ? "syllabus" : "positions");
+  // Recomputed on every edit rather than passed in from the server: deleting a
+  // section is how a candidate orphans three questions, and the warning has to
+  // appear the moment they do it, not on the next page load.
+  const refs = useMemo(
+    () =>
+      auditRefs(
+        knowledgeBase.sections,
+        knowledgeBase.chips,
+        knowledgeBase.quiz
+      ),
+    [knowledgeBase.sections, knowledgeBase.chips, knowledgeBase.quiz]
+  );
+  const citedIds = useMemo(
+    () =>
+      new Set(
+        [
+          ...knowledgeBase.chips.map((chip) => chip.kb_section),
+          ...knowledgeBase.quiz.map((item) => item.source_section),
+        ].filter(Boolean)
+      ),
+    [knowledgeBase.chips, knowledgeBase.quiz]
+  );
 
+  const [tab, setTab] = useState("chips");
   const [publishUrl, setPublishUrl] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string[] | null>(null);
   const [retryStatuses, setRetryStatuses] = useState<string[] | null>(null);
+
+  const selected = knowledgeBase.chips.filter((chip) => chip.selected).length;
 
   async function publish() {
     setPublishError(null);
     await flush();
     try {
-      const { course: published, url } = await publishCourse(course.id);
+      const { knowledge_base: published, url } = await publishKnowledgeBase(
+        knowledgeBase.id
+      );
       replace(published);
       setPublishUrl(url);
     } catch (error) {
@@ -68,7 +91,7 @@ export function ReviewScreen({
 
   async function retryIngestion() {
     setRetryStatuses([]);
-    for await (const event of reingestCourse(course.id)) {
+    for await (const event of reingestKnowledgeBase(knowledgeBase.id)) {
       if (event.type === "status") {
         setRetryStatuses((current) => [...(current ?? []), event.message]);
       } else if (event.type === "result") {
@@ -85,33 +108,34 @@ export function ReviewScreen({
     return <IngestPanel statuses={retryStatuses} />;
   }
 
-  if (course.ingest_status === "failed") {
+  if (knowledgeBase.ingest_status === "failed") {
     return (
       <div className="flex flex-col gap-6">
-        <Header course={course} saveLabel="" />
+        <Header knowledgeBase={knowledgeBase} saveLabel="" />
         <Notice
           tone="alert"
           label="Ingestion failed"
           actions={
             <Button variant="accent" onClick={() => void retryIngestion()}>
-              Retry ingestion
+              Retry
             </Button>
           }
         >
-          <p>{course.ingest_error ?? "The model didn't finish."}</p>
+          <p>{knowledgeBase.ingest_error ?? "The pipeline didn't finish."}</p>
           <p className="mt-2 text-ink-muted">
-            Your material is saved — {course.source_files.join(", ") || "pasted text"}.
-            Nothing needs re-uploading.
+            Your documents are saved —{" "}
+            {knowledgeBase.source_files.join(", ") || "pasted text"}. Nothing
+            needs re-uploading.
           </p>
         </Notice>
       </div>
     );
   }
 
-  if (course.ingest_status === "running") {
+  if (knowledgeBase.ingest_status === "running") {
     return (
       <div className="flex flex-col gap-6">
-        <Header course={course} saveLabel="" />
+        <Header knowledgeBase={knowledgeBase} saveLabel="" />
         <Notice
           label="Still building"
           actions={
@@ -120,7 +144,7 @@ export function ReviewScreen({
             </Button>
           }
         >
-          This course is still being built. It usually takes under a minute.
+          This is still being built. It usually takes a minute or two.
         </Notice>
       </div>
     );
@@ -129,7 +153,7 @@ export function ReviewScreen({
   return (
     <div className="flex flex-col gap-8">
       <Header
-        course={course}
+        knowledgeBase={knowledgeBase}
         saveLabel={SAVE_LABEL[saveState]}
         actions={
           <>
@@ -137,13 +161,13 @@ export function ReviewScreen({
               variant="secondary"
               onClick={async () => {
                 await flush();
-                router.push(`/studio/${course.id}/preview`);
+                router.push(`/studio/${knowledgeBase.id}/preview`);
               }}
             >
-              Preview as a student
+              Preview as a recruiter
             </Button>
             <Button variant="accent" onClick={() => void publish()}>
-              {course.status === "published" ? "Republish" : "Publish"}
+              {knowledgeBase.status === "published" ? "Republish" : "Publish"}
             </Button>
           </>
         }
@@ -160,9 +184,8 @@ export function ReviewScreen({
       )}
 
       <p className="type-body-l measure-read">
-        {thin
-          ? "Your material is mostly craft, not argument — so this course sells on the syllabus. Start there."
-          : "Your opinions are the asset. Start with the stances; the syllabus is the easy part."}
+        Eight questions a recruiter would type first. Pick the {SELECTED_CHIP_COUNT}{" "}
+        that go on your front page — the rest of this is what answers them.
       </p>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
@@ -176,36 +199,48 @@ export function ReviewScreen({
             }}
           >
             <TabsList>
-              <TabsTrigger value="positions">
-                Positions · {course.positions.length}
+              <TabsTrigger value="chips">
+                Questions · {selected}/{SELECTED_CHIP_COUNT}
               </TabsTrigger>
-              <TabsTrigger value="syllabus">
-                Syllabus · {course.lessons.length}
+              <TabsTrigger value="sections">
+                Knowledge base · {knowledgeBase.sections.length}
               </TabsTrigger>
-              <TabsTrigger value="voice">Voice</TabsTrigger>
+              <TabsTrigger value="quiz">
+                Quiz · {knowledgeBase.quiz.length}
+              </TabsTrigger>
+              <TabsTrigger value="pre-roll">Pre-roll</TabsTrigger>
             </TabsList>
 
             <div className="border-2 border-t-0 border-ink p-6">
-              <TabsContent value="positions">
-                <PositionsTab
-                  course={course}
-                  unanchoredClaims={unanchoredClaims}
-                  onChange={(positions) => apply({ positions })}
-                  onReplaceCourse={replace}
+              <TabsContent value="chips">
+                <ChipsTab
+                  knowledgeBase={knowledgeBase}
+                  unresolved={refs.chips}
+                  onChange={(chips) => apply({ chips })}
+                  onReplace={replace}
                 />
               </TabsContent>
 
-              <TabsContent value="syllabus">
-                <SyllabusTab
-                  lessons={course.lessons}
-                  onChange={(lessons) => apply({ lessons })}
+              <TabsContent value="sections">
+                <SectionsTab
+                  sections={knowledgeBase.sections}
+                  citedIds={citedIds}
+                  onChange={(sections) => apply({ sections })}
                 />
               </TabsContent>
 
-              <TabsContent value="voice">
-                <VoiceTab
-                  voice={course.voice_card}
-                  onChange={(voice_card) => apply({ voice_card })}
+              <TabsContent value="quiz">
+                <QuizTab
+                  quiz={knowledgeBase.quiz}
+                  unresolved={refs.quiz}
+                  onChange={(quiz) => apply({ quiz })}
+                />
+              </TabsContent>
+
+              <TabsContent value="pre-roll">
+                <PreRollTab
+                  preRoll={knowledgeBase.pre_roll}
+                  onChange={(pre_roll) => apply({ pre_roll })}
                 />
               </TabsContent>
             </div>
@@ -215,8 +250,8 @@ export function ReviewScreen({
         {/* `updated_at` changes exactly when a save lands, so the preview
             follows the edits without a counter to keep in sync. */}
         <PublicPreviewPanel
-          courseId={course.id}
-          refreshKey={course.updated_at}
+          kbId={knowledgeBase.id}
+          refreshKey={knowledgeBase.updated_at}
         />
       </div>
 
@@ -230,11 +265,11 @@ export function ReviewScreen({
 }
 
 function Header({
-  course,
+  knowledgeBase,
   saveLabel,
   actions,
 }: {
-  course: Course;
+  knowledgeBase: KnowledgeBase;
   saveLabel: string;
   actions?: React.ReactNode;
 }) {
@@ -243,10 +278,10 @@ function Header({
       <div>
         <div className="flex flex-wrap items-center gap-3">
           <span className="type-meta border-2 border-ink px-2 py-0.5">
-            {course.status === "published" ? "Published" : "Draft"}
+            {knowledgeBase.status === "published" ? "Published" : "Draft"}
           </span>
-          <span className="type-meta border-2 border-ink bg-pink px-2 py-0.5">
-            {formatPrice(course.price_cents)}
+          <span className="type-meta border-2 border-ink bg-pink px-2 py-0.5 font-mono">
+            /k/{knowledgeBase.slug}
           </span>
           {saveLabel && (
             <span className="type-meta text-ink-muted" aria-live="polite">
@@ -254,12 +289,12 @@ function Header({
             </span>
           )}
         </div>
-        <h1 className="type-display-l mt-3">{course.title}</h1>
-        <p className="type-body-s mt-2 text-ink-muted">{course.tagline}</p>
+        <h1 className="type-display-l mt-3">{knowledgeBase.title}</h1>
+        <p className="type-body-s mt-2 text-ink-muted">{knowledgeBase.tagline}</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <ButtonLink variant="ghost" href="/studio">
-          All courses
+          All knowledge bases
         </ButtonLink>
         {actions}
       </div>

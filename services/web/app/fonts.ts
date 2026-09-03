@@ -1,29 +1,24 @@
-import { Archivo, DM_Mono, Newsreader } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 
-// DESIGN.md §3 — three families, each with a job. The split is semantic, not
-// decorative: the candidate's words are serif, the application's own voice is
-// grotesk, and anything that is a number is mono.
+// NEW_DESIGN.md §3 — one family. Hierarchy is size, weight and tracking, never a
+// family change. Geist is the free substitute the brief names for Saans: a
+// geometric grotesk that reads confident at 500 without going bold.
+//
+// Geist Mono appears in exactly one place — section ids, which the candidate has
+// to compare character by character. Not on counts, not on timestamps, not on
+// status. Mono is information here, not texture.
 
-export const archivo = Archivo({
+export const geist = Geist({
   subsets: ["latin"],
-  axes: ["wdth"],
-  variable: "--font-archivo",
+  variable: "--font-geist",
   display: "swap",
 });
 
-export const newsreader = Newsreader({
+export const geistMono = Geist_Mono({
   subsets: ["latin"],
-  // Italic carries the `pushback` quotes and citation expansions.
-  style: ["normal", "italic"],
-  variable: "--font-newsreader",
+  weight: ["400"],
+  variable: "--font-geist-mono",
   display: "swap",
 });
 
-export const dmMono = DM_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-dm-mono",
-  display: "swap",
-});
-
-export const fontVariables = `${archivo.variable} ${newsreader.variable} ${dmMono.variable}`;
+export const fontVariables = `${geist.variable} ${geistMono.variable}`;

@@ -23,14 +23,14 @@ export function PreRollCard({
 }) {
   return (
     <section
-      className={cn("flex flex-col gap-5 border-[3px] border-ink bg-paper p-6", className)}
+      className={cn("card-surface flex flex-col gap-5 p-6", className)}
     >
-      <h2 className="type-display-m">
+      <h2 className="type-headline">
         {preRoll.headline || "Sixty minutes. Starts when you hit send."}
       </h2>
 
       <div className="flex flex-col gap-2">
-        <p className="type-meta text-ink-muted">What&apos;s loaded</p>
+        <p className="type-caption text-ink-muted">What&apos;s loaded</p>
         <ul className="flex flex-col gap-1.5">
           {preRoll.bullets.map((bullet, index) => (
             <li key={index} className="type-body-l flex gap-2">
@@ -42,23 +42,23 @@ export function PreRollCard({
           ))}
         </ul>
         {preRoll.bullets.length === 0 && (
-          <p className="type-body-s text-ink-muted">
+          <p className="type-body-sm text-ink-muted">
             Nothing here yet. Four lines saying what a recruiter will actually
             get is what makes the hour worth starting.
           </p>
         )}
       </div>
 
-      <p className="type-meta border-t-2 border-ink pt-4">{PRICE_LINE}</p>
+      <p className="type-caption border-t border-hairline-soft pt-4">{PRICE_LINE}</p>
 
       <button
         type="button"
         disabled={disabled}
         className={cn(
-          "type-label self-start rounded-full border-2 border-ink px-6 py-3",
+          "type-label self-start rounded-full border border-hairline px-6 py-3",
           disabled
-            ? "cursor-not-allowed border-ink-faint text-ink-faint"
-            : "bg-ink text-paper"
+            ? "cursor-not-allowed border-hairline-soft text-ink-faint"
+            : "bg-ink text-on-ink"
         )}
       >
         Start my hour

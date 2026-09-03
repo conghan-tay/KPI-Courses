@@ -2,7 +2,7 @@
 
 import { Field } from "@/components/form/Field";
 import { Input } from "@/components/ui/input";
-import { Notice } from "@/components/riso/Notice";
+import { Notice } from "@/components/chrome/Notice";
 import { PreRollCard } from "@/components/interview/PreRollCard";
 import { Textarea } from "@/components/ui/textarea";
 import { PRE_ROLL_BULLETS } from "@/lib/types";
@@ -21,7 +21,7 @@ import type { PreRoll } from "@/lib/types";
  * promising.
  */
 const GUIDANCE =
-  "Four things you'll actually answer. Name them — a bullet that promises an uncomfortable question is worth two that promise you're impressive.";
+  "Four things you'll actually answer. Name them. A bullet that promises an uncomfortable question is worth two that promise you're impressive.";
 
 function toLines(values: string[]): string {
   return values.join("\n");
@@ -85,7 +85,7 @@ export function PreRollTab({
           </Field>
 
           {over && (
-            <Notice tone="alert" label="Too many">
+            <Notice tone="danger" label="Too many">
               The card holds {PRE_ROLL_BULLETS}. Anything past that is dropped
               when you save.
             </Notice>

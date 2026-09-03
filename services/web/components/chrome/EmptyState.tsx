@@ -22,13 +22,13 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "pat-halftone grid place-items-center border-2 border-ink p-11",
+        "card-surface grid place-items-center p-12",
         className
       )}
     >
-      <div className="flex flex-col items-start gap-3.5 border-2 border-ink bg-paper px-6 py-5">
+      <div className="flex flex-col items-start gap-3.5 border border-hairline bg-surface px-6 py-5">
         <p className="type-title">{title}</p>
-        {note && <p className="type-body-s measure-ui text-ink-muted">{note}</p>}
+        {note && <p className="type-body-sm measure-ui text-ink-muted">{note}</p>}
         {action}
       </div>
     </div>

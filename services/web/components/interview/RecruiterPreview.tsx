@@ -1,8 +1,7 @@
 import { PreRollCard } from "@/components/interview/PreRollCard";
 import { PublicChip } from "@/components/kb/ChipCard";
-import { RisoPortrait } from "@/components/kb/RisoPortrait";
+import { Portrait } from "@/components/kb/Portrait";
 import { SectionIndex } from "@/components/interview/SectionIndex";
-import { Ticker } from "@/components/frame/Ticker";
 import { sectionId } from "@/lib/types";
 import type { KnowledgeBase } from "@/lib/types";
 
@@ -39,11 +38,12 @@ export function RecruiterPreview({
   ].filter(Boolean);
 
   return (
-    <div className="flex flex-col border-[3px] border-ink">
-      <Ticker
-        phrases={["Preview — not live"]}
-        className="border-b-[3px] border-ink"
-      />
+    <div className="card-surface flex flex-col overflow-hidden">
+      {/* NEW_DESIGN.md §6 — a plain status bar. The scrolling ticker was
+          ceremony, and this line has to be read once rather than chased. */}
+      <p className="type-label border-b border-hairline bg-surface-sunk px-5 py-3 text-ink-muted">
+        Preview. Nothing here is live yet.
+      </p>
 
       <div className="flex min-h-[520px] max-md:flex-col">
         <SectionIndex
@@ -52,7 +52,7 @@ export function RecruiterPreview({
           note={`${knowledgeBase.sections.length} sections loaded`}
           className="max-md:w-full max-md:border-r-0 max-md:border-b-[3px]"
           footer={
-            <p className="type-body-s text-ink-muted">
+            <p className="type-body-sm text-ink-muted">
               Filled numerals are sections a question points at.
             </p>
           }
@@ -60,12 +60,12 @@ export function RecruiterPreview({
 
         <div className="flex min-w-0 flex-1 flex-col gap-6 p-6">
           <div className="flex items-start gap-4">
-            <RisoPortrait
+            <Portrait
               name={knowledgeBase.candidate_name}
               initials={initialsOf(knowledgeBase.candidate_name)}
             />
             <div className="min-w-0">
-              <h1 className="type-display-m">{knowledgeBase.title}</h1>
+              <h1 className="type-headline">{knowledgeBase.title}</h1>
               <p className="type-body-l measure-read mt-2">
                 {knowledgeBase.tagline}
               </p>
@@ -75,12 +75,12 @@ export function RecruiterPreview({
           <PreRollCard preRoll={knowledgeBase.pre_roll} disabled />
 
           <div className="flex flex-col gap-3">
-            <p className="type-meta text-ink-muted">
+            <p className="type-caption text-ink-muted">
               Or start with one of these
             </p>
             {selected.length === 0 ? (
-              <p className="type-body-s text-ink-muted">
-                No questions chosen yet. Pick three on the Questions tab — they
+              <p className="type-body-sm text-ink-muted">
+                No questions chosen yet. Pick three on the Questions tab. They
                 are the first thing a recruiter sees.
               </p>
             ) : (
@@ -95,11 +95,11 @@ export function RecruiterPreview({
           {/* Named so the candidate can see the id a question resolves to — it
               is the thing the whole reference check turns on. */}
           {knowledgeBase.sections.length > 0 && (
-            <details className="border-2 border-ink">
-              <summary className="type-meta cursor-pointer px-3 py-2 hover:bg-pink">
+            <details className="border border-hairline">
+              <summary className="type-label cursor-pointer px-4 py-3 text-ink-muted hover:bg-surface-sunk hover:text-ink">
                 ▸ Section ids
               </summary>
-              <ul className="flex flex-col gap-1 border-t-2 border-ink bg-paper-tint px-3 py-3">
+              <ul className="flex flex-col gap-1 border-t border-hairline-soft bg-surface-sunk px-3 py-3">
                 {knowledgeBase.sections.map((section) => (
                   <li key={section.ord} className="font-mono text-[13px]">
                     {sectionId(section.path, section.anchor)}

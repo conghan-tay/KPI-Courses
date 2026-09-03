@@ -22,7 +22,7 @@ export const SEEDED_USERS: User[] = [
     name: "Arun Velasco",
     role: "candidate",
     initials: "AV",
-    bio: "Payments engineer. Five and a half years on supplier payouts at Agoda — virtual card issuance, PSP failover, nightly reconciliation. Eleven years, four employers, one gap he will tell you about.",
+    bio: "Payments engineer. Five and a half years on supplier payouts at Agoda: virtual card issuance, PSP failover, nightly reconciliation. Eleven years, four employers, one gap he will tell you about.",
   },
   {
     id: "user-priya",

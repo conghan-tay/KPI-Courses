@@ -5,10 +5,14 @@ import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * DESIGN.md §4.10 — an invalid field carries three signals, one of them
- * non-chromatic: the border turns alert, a hatch-filled strip appears on the
- * left edge, and a `body-s` message in alert explains it. Colour alone is never
- * the message.
+ * NEW_DESIGN.md §6.6 — label above at 14/500 sentence case, helper below the
+ * label, error below the field. Never placeholder-as-label.
+ *
+ * An invalid field carries two signals: the border turns danger and a message
+ * in danger explains it. The old system added a hatch-filled gutter stripe as a
+ * third, non-chromatic signal; this one drops the pattern because a message in
+ * words is already non-chromatic and the stripe cost 10px of every field's
+ * width.
  *
  * `children` receives the generated id so the label is always wired to a real
  * control, and `aria-invalid` is set from the same source as the visible state.
@@ -35,29 +39,23 @@ export function Field({
   const invalid = Boolean(error);
 
   return (
-    <div className={cn("flex flex-col gap-1.5", invalid && "pl-2.5", className)}>
-      <div className={cn("relative flex flex-col gap-1.5", invalid && "pl-0")}>
-        {invalid && (
-          <span
-            aria-hidden
-            className="pat-hatch-alert absolute top-0 bottom-0 -left-2.5 w-1.5"
-          />
-        )}
-        <label htmlFor={id} className="type-label">
-          {label}
-        </label>
-        {children({
-          id,
-          "aria-invalid": invalid,
-          "aria-describedby": error || hint ? messageId : undefined,
-        })}
-      </div>
-      {(error || hint) && (
-        <p
-          id={messageId}
-          className={cn("type-body-s", error ? "text-alert" : "text-ink-muted")}
-        >
-          {error ?? hint}
+    <div className={cn("flex flex-col gap-2", className)}>
+      <label htmlFor={id} className="type-label text-ink">
+        {label}
+      </label>
+      {hint && !error && (
+        <p id={messageId} className="type-body-sm -mt-1 text-ink-muted">
+          {hint}
+        </p>
+      )}
+      {children({
+        id,
+        "aria-invalid": invalid,
+        "aria-describedby": error || hint ? messageId : undefined,
+      })}
+      {error && (
+        <p id={messageId} className="type-body-sm text-danger">
+          {error}
         </p>
       )}
     </div>

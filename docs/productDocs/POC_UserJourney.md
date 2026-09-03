@@ -88,7 +88,7 @@ is just the path.
 { "headline": "Sixty minutes. Starts when you hit send.",
   "bullets": ["Full timeline, four employers, gap included",
               "Six systems I built, at architecture depth",
-              "Bring your band — it'll say if it clears",
+              "Bring your band, it'll say if it clears",
               "Opinions I'll defend and can't be talked out of"] }
 ```
 

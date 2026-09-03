@@ -54,7 +54,7 @@ export function updateSection(
 }
 
 /**
- * Merge a section into the one above it. Titles join with an em dash, summaries
+ * Merge a section into the one above it. Titles join with a plus, summaries
  * and bodies concatenate. Nothing is thrown away: a candidate who merges the
  * wrong pair should see all the material still there and be able to split it
  * back apart.
@@ -70,7 +70,7 @@ export function mergeSectionUp(sections: Section[], index: number): Section[] {
 
   const merged: Section = {
     ...above,
-    title: `${above.title} — ${current.title}`,
+    title: `${above.title} + ${current.title}`,
     summary: [above.summary, current.summary].filter(Boolean).join(" "),
     body_md: [above.body_md, current.body_md].filter(Boolean).join("\n\n"),
     source_names: [

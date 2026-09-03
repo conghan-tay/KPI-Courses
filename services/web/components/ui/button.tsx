@@ -4,43 +4,41 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-// DESIGN.md §4.1 — pill, 2px black border, bold uppercase label. Hover lifts the
-// button up-left and reveals the hard shadow; press slams it back down. The
-// lift-and-slam is the only tactility in a flat system, so it is not optional.
-// `disabled:pointer-events-none` is what keeps the lift off disabled buttons.
+// NEW_DESIGN.md §6.1 — 8px radius, 15/500 label, one line always. No pills.
+// Tactility is a 1px downward translate over 120ms: it confirms the click landed
+// and does nothing else. There is no lift, no shadow toggle, no stepped easing.
 const buttonVariants = cva(
   cn(
-    "inline-flex shrink-0 items-center justify-center gap-2 rounded-pill border-2 border-ink",
-    "type-label whitespace-nowrap select-none cursor-pointer",
-    "transition-transform duration-[90ms] ease-[steps(3)]",
-    "hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-lift",
-    "active:translate-x-0 active:translate-y-0 active:shadow-none",
-    "disabled:pointer-events-none disabled:border-ink-faint disabled:bg-paper disabled:text-ink-faint",
+    "inline-flex shrink-0 items-center justify-center gap-2 rounded-md",
+    "type-button whitespace-nowrap select-none cursor-pointer",
+    "transition-[background-color,color,border-color,transform] duration-120 ease-out",
+    "active:translate-y-px",
+    "disabled:pointer-events-none disabled:bg-surface-sunk disabled:text-ink-faint disabled:border-hairline-soft",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
   ),
   {
     variants: {
       variant: {
-        primary: "bg-ink text-paper",
-        accent: "bg-pink text-ink active:bg-pink-deep",
-        secondary: "bg-paper text-ink hover:bg-pink active:bg-pink-deep",
-        // The pink highlighter block behind the text is the hover state; the
-        // button itself neither lifts nor carries a border.
-        // A ghost button has no border at rest, so it must not grow one when
-        // it is disabled either.
+        primary: "border border-ink bg-ink text-on-ink hover:bg-black",
+        // §6.1 — the publish action, and nothing else. White on #ff5600 is
+        // 3.19:1, which is below AA at 15px and above the 3:1 large-text
+        // threshold at 16px/600. The size bump is a contrast requirement, not
+        // a style choice.
+        live: "border border-live bg-live text-on-ink text-[16px] font-semibold hover:bg-[#e64d00]",
+        secondary:
+          "border border-hairline bg-surface text-ink hover:bg-surface-sunk",
         ghost:
-          "border-transparent bg-transparent text-ink px-2 hover:translate-x-0 hover:translate-y-0 hover:bg-pink hover:shadow-none disabled:border-transparent disabled:bg-transparent",
-        destructive:
-          "bg-paper border-alert text-alert hover:bg-alert hover:text-paper",
+          "border border-transparent bg-transparent text-ink-muted hover:bg-surface-sunk hover:text-ink disabled:bg-transparent disabled:border-transparent",
+        danger:
+          "border border-danger bg-surface text-danger hover:bg-danger-wash",
       },
       size: {
-        sm: "h-[34px] px-4 text-[12px]",
-        // 44px is the default and the tablet touch-target floor. Never use `sm`
-        // for a primary action on tablet.
-        md: "h-11 px-6",
-        lg: "h-14 px-9 text-[15px]",
-        // Icon-only buttons are circles, never pills, and never below 44px.
-        icon: "size-11 rounded-full px-0",
+        sm: "h-8 px-3 text-[13px]",
+        // 40px default. 44px is the touch floor, which `md` clears once the
+        // tablet breakpoint bumps it — never use `sm` for a primary action.
+        md: "h-10 px-[18px] py-2.5 max-md:h-11",
+        lg: "h-12 px-6",
+        icon: "size-10 rounded-md px-0 max-md:size-11",
       },
     },
     defaultVariants: {

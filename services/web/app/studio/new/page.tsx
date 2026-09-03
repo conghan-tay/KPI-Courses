@@ -1,7 +1,7 @@
 import { AppFrame } from "@/components/frame/AppFrame";
 import { ButtonLink } from "@/components/ui/button";
 import { NewKBForm } from "@/components/studio/NewKBForm";
-import { SectionHead } from "@/components/riso/SectionHead";
+import { SectionHead } from "@/components/chrome/SectionHead";
 
 export default function NewKnowledgeBasePage() {
   return (

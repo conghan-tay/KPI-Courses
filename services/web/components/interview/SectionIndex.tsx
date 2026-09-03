@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { sectionId } from "@/lib/types";
 import type { Section } from "@/lib/types";
 
-// DESIGN.md §4.8 — roman numerals in outlined circles down a 280px rail on
+// NEW_DESIGN.md §6.4 — roman numerals in outlined circles down a 280px rail on
 // paper-tint, separated from the content by a 3px rule. What used to be a
 // syllabus is now the index of the knowledge base: what's loaded, in the order
 // a stranger should read it.
@@ -33,11 +33,11 @@ export function SectionIndex({
     <nav
       aria-label="Knowledge base"
       className={cn(
-        "flex w-[280px] shrink-0 flex-col gap-5 border-r-[3px] border-ink bg-paper-tint p-5",
+        "flex w-[280px] shrink-0 flex-col gap-5 border-r border-hairline bg-surface-sunk p-5",
         className
       )}
     >
-      {note && <p className="type-meta text-ink-muted">{note}</p>}
+      {note && <p className="type-caption text-ink-muted">{note}</p>}
 
       <ol className="flex flex-col">
         {sections.map((section) => {
@@ -46,9 +46,9 @@ export function SectionIndex({
             <li key={section.ord} className="flex items-center gap-3 py-[7px]">
               <span
                 className={cn(
-                  "grid size-7 shrink-0 place-items-center rounded-full border-2 border-ink",
+                  "grid size-7 shrink-0 place-items-center rounded-full border border-hairline",
                   "font-mono text-[10px] leading-none font-medium",
-                  isCited ? "bg-ink text-paper" : "bg-paper text-ink"
+                  isCited ? "bg-ink text-on-ink" : "bg-surface text-ink"
                 )}
               >
                 {toRoman(section.ord)}
@@ -72,7 +72,7 @@ export function SectionIndex({
       </ol>
 
       {sections.length === 0 && (
-        <p className="type-body-s text-ink-muted">
+        <p className="type-body-sm text-ink-muted">
           Nothing loaded yet.
         </p>
       )}

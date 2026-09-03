@@ -22,7 +22,7 @@ import { KBMetaSchema } from "@/lib/types";
  * a missing name, a scanned PDF, forty words of material — comes back as
  * ordinary JSON, because the dropzone needs to put the message next to the
  * field. Once ingestion starts the response becomes SSE: a line of streamed
- * status and no percentage we can't honour (DESIGN.md §4.14).
+ * status and no percentage we can't honour (NEW_DESIGN.md §6.10).
  */
 
 export const dynamic = "force-dynamic";

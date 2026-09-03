@@ -144,7 +144,8 @@ services/
   mcp-tools/server.py         Parked. Journey 2's chat is the caller it exists for.
 docs/productDocs/
   POC_UserJourney.md          The three journeys; Journey 1 in build detail
-  DESIGN.md                   The RISO POSTER design language
+  NEW_DESIGN.md               The WARM DOCUMENT design language
+  DESIGN.md                   Superseded. The RISO POSTER system it replaced.
   TheReverseInterview/        The original idea and the authored prompts
   fixtures/                   7 documents + expected.json + assertions B1–B8
 tests/e2e/                    The whole stack, over the wire

@@ -4,9 +4,9 @@ import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
 
 import { cn } from "@/lib/utils";
 
-// DESIGN.md §4.11 — file-folder tabs. Square-topped tabs sitting on a 3px rule.
-// The active tab is ink-filled, so the rule beneath it reads as erased and the
-// tab connects to the panel. Panel switching is instant: no transition.
+// NEW_DESIGN.md §6.5 — underline tabs, not file folders. The row sits directly
+// on the canvas and the panel below is its own surface card, so the tabs cost a
+// rule rather than a bordered box. Panel switching is instant.
 
 function Tabs({ className, ...props }: TabsPrimitive.Root.Props) {
   return (
@@ -23,7 +23,8 @@ function TabsList({ className, ...props }: TabsPrimitive.List.Props) {
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        "flex items-end gap-1.5 border-b-[3px] border-ink",
+        // Scrolls rather than wraps below `md`: a two-line tab row is broken.
+        "flex items-stretch gap-1 overflow-x-auto border-b border-hairline",
         className
       )}
       {...props}
@@ -36,8 +37,9 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
     <TabsPrimitive.Tab
       data-slot="tabs-trigger"
       className={cn(
-        "type-label -mb-[3px] cursor-pointer border-2 border-b-0 border-ink bg-paper px-5 py-2.5 text-ink-muted",
-        "data-active:bg-ink data-active:text-paper",
+        "type-label -mb-px cursor-pointer whitespace-nowrap border-b-2 border-transparent px-3.5 py-3 text-ink-muted",
+        "transition-colors duration-120 ease-out hover:text-ink",
+        "data-active:border-ink data-active:text-ink",
         className
       )}
       {...props}

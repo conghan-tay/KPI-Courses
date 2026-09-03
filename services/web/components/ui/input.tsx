@@ -3,20 +3,21 @@ import { Input as InputPrimitive } from "@base-ui/react/input";
 
 import { cn } from "@/lib/utils";
 
-// DESIGN.md §4.10 — square, 2px ink border, paper fill, 12px/16px padding.
-// Focus is the global black ring with a paper gap (globals.css), never a pink
-// glow and never a border-colour change. Invalid switches the border to alert;
-// the hatch gutter and the message come from <Field> in components/form/Field.
+// NEW_DESIGN.md §6.6 — white fill, 1px hairline, 8px radius, 10px/14px padding.
+// Focus is the global charcoal ring (globals.css) because focus is not public;
+// orange is reserved for what a recruiter sees. Invalid switches the border to
+// danger and <Field> renders the message below.
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <InputPrimitive
       type={type}
       data-slot="input"
       className={cn(
-        "type-body w-full min-w-0 rounded-none border-2 border-ink bg-paper px-4 py-3 text-ink",
-        "placeholder:text-ink-muted",
-        "aria-invalid:border-alert",
-        "disabled:pointer-events-none disabled:border-ink-faint disabled:text-ink-faint",
+        "type-body w-full min-w-0 rounded-md border border-hairline bg-surface px-3.5 py-2.5 text-ink",
+        "placeholder:text-ink-subtle",
+        "transition-colors duration-120 ease-out hover:border-ink-subtle",
+        "aria-invalid:border-danger",
+        "disabled:pointer-events-none disabled:bg-surface-sunk disabled:text-ink-faint disabled:border-hairline-soft",
         className
       )}
       {...props}

@@ -1,3 +1,16 @@
+# DESIGN.md - RISO POSTER **(superseded)**
+
+> **This is an archive, not a spec.** The shipped system is
+> [`NEW_DESIGN.md`](NEW_DESIGN.md) (WARM DOCUMENT: cream canvas, charcoal primary, one
+> orange signal that means "public"). Nothing in this file describes the current UI.
+>
+> It is kept because two of its instincts carried over and the reasoning is here rather
+> than in the new doc: **state is never carried by hue alone**, and **withheld content is
+> omitted server-side rather than blurred in CSS**. NEW_DESIGN.md §0 records exactly what
+> was wrong with the rest.
+
+---
+
 # DESIGN.md
 
 **Project:** The Reverse Interview — a candidate's knowledge base, interrogated by a recruiter

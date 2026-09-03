@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { AppFrame } from "@/components/frame/AppFrame";
 import { ButtonLink } from "@/components/ui/button";
 import { RecruiterPreview } from "@/components/interview/RecruiterPreview";
-import { SectionHead } from "@/components/riso/SectionHead";
+import { SectionHead } from "@/components/chrome/SectionHead";
 import { getMyKnowledgeBase } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";

@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-// DESIGN.md §6, plane 3 — paper, 3px border, --lift-lg. The backdrop is pink at
+// NEW_DESIGN.md §4, plane 3 — the only shadow in the system. The backdrop is ink at
 // 92%, not black at 50%: a pink scrim keeps the print language, a black scrim
 // looks like every other web app. Enter is a stepped transform; opacity is
 // untouched, because this system has no fades.
@@ -31,7 +31,7 @@ function DialogOverlay({
   return (
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
-      className={cn("fixed inset-0 z-50 bg-pink/92", className)}
+      className={cn("fixed inset-0 z-50 bg-ink/25", className)}
       {...props}
     />
   );
@@ -53,8 +53,8 @@ function DialogContent({
         className={cn(
           "fixed top-1/2 left-1/2 z-50 [translate:-50%_-50%]",
           "flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 sm:max-w-lg",
-          "border-[3px] border-ink bg-paper p-8 shadow-lift-lg outline-none",
-          "data-open:animate-[riso-dialog-enter_120ms_steps(3)]",
+          "overlay-panel p-7 outline-none",
+          "data-open:animate-[overlay-enter_140ms_ease-out]",
           className
         )}
         {...props}
@@ -104,7 +104,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("type-display-m", className)}
+      className={cn("type-headline", className)}
       {...props}
     />
   );

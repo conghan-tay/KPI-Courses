@@ -8,7 +8,7 @@ import { Dropzone } from "@/components/studio/Dropzone";
 import { Field } from "@/components/form/Field";
 import { IngestPanel } from "@/components/studio/IngestPanel";
 import { Input } from "@/components/ui/input";
-import { Notice } from "@/components/riso/Notice";
+import { Notice } from "@/components/chrome/Notice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiRequestError, ingestKnowledgeBase } from "@/lib/api-client";
@@ -132,7 +132,7 @@ export function NewKBForm() {
   if (mode === "failed") {
     return (
       <div className="flex flex-col gap-6">
-        <Notice tone="alert" label="Ingestion failed">
+        <Notice tone="danger" label="Ingestion failed">
           <p>{failure?.message}</p>
           <p className="mt-2 text-ink-muted">
             Your documents were saved. Nothing needs re-uploading.
@@ -140,7 +140,7 @@ export function NewKBForm() {
         </Notice>
         <div className="flex flex-wrap gap-3">
           {failure?.kbId && (
-            <ButtonLink variant="accent" href={`/studio/${failure.kbId}`}>
+            <ButtonLink variant="primary" href={`/studio/${failure.kbId}`}>
               Open the draft and retry
             </ButtonLink>
           )}
@@ -181,7 +181,7 @@ export function NewKBForm() {
         <TabsContent value="paste" className="pt-6">
           <Field
             label="Paste your material"
-            hint="A CV, an architecture write-up, notes on what you want next — whatever you already wrote."
+            hint="A CV, an architecture write-up, notes on what you want next. Whatever you already wrote."
           >
             {(props) => (
               <Textarea
@@ -230,7 +230,7 @@ export function NewKBForm() {
           Build my knowledge base
         </Button>
         {!canBuild && (
-          <span className="type-body-s text-ink-muted">
+          <span className="type-body-sm text-ink-muted">
             Drop a document or paste your material first.
           </span>
         )}
